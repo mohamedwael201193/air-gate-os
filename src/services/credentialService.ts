@@ -1,3 +1,6 @@
+import { airIssue, airVerify } from '@/air/airkit';
+import { getIssuerId, getVerifierId } from '@/air/programs';
+
 interface CredentialData {
   id: string;
   type: string;
@@ -16,73 +19,18 @@ interface VerificationRecord {
 }
 
 export class CredentialService {
-  private getProgramIds() {
-    try {
-      return JSON.parse(import.meta.env.VITE_ISSUER_PROGRAM_IDS || '{}');
-    } catch {
-      return {
-        KYC_BASIC: 'c21s90g0pcu4m00C2599ez',
-        WORK_HISTORY: 'c21s90g0pe1vl00d99732s',
-        FAN_BADGE: 'c21s90g0pf0lb00e8395zm'
-      };
-    }
-  }
-
-  private getVerifierIds() {
-    try {
-      return JSON.parse(import.meta.env.VITE_VERIFIER_PROGRAM_IDS || '{}');
-    } catch {
-      return {
-        DEFI_JOB_GATE_KYC: 'c21s9030ptsdv004534lxx',
-        DEFI_JOB_GATE_WORK: 'c21s9030qfcmm005534IFW',
-        FAN_VIP_GATE: 'c21s9030qlq2y0065341JX',
-        TRADER_TIER_GATE: 'c21s9030qnpvw0075341e7'
-      };
-    }
-  }
-
-  async getPartnerToken(scope: string = 'issue'): Promise<string> {
-    try {
-      const response = await fetch(
-        import.meta.env.VITE_PARTNER_TOKEN_URL || 'https://airgate-keys.vercel.app/api/partner-token',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ scope })
-        }
-      );
-      
-      if (!response.ok) {
-        throw new Error('Failed to get partner token');
-      }
-      
-      return await response.text();
-    } catch (error) {
-      console.error('Failed to get partner token:', error);
-      return 'mock-token-' + Date.now();
-    }
-  }
-
   async issueCredential(
-    service: any,
+    _service: any, // Not used anymore, kept for compatibility
     type: 'KYC_BASIC' | 'WORK_HISTORY' | 'FAN_BADGE',
     data: any
   ): Promise<CredentialData> {
-    const programIds = this.getProgramIds();
-    const credentialId = programIds[type];
-    
     try {
-      const token = await this.getPartnerToken('issue');
+      const credentialId = getIssuerId(type);
       
-      const result = await service.issueCredential({
-        authToken: token,
-        credentialId,
-        issuerDid: import.meta.env.VITE_AIR_ISSUER_DID,
-        credentialSubject: data
-      });
+      const result = await airIssue(credentialId, data, import.meta.env.VITE_AIR_ISSUER_DID);
 
       const credential: CredentialData = {
-        id: result.id || `cred_${Date.now()}`,
+        id: (result as any)?.id || `cred_${Date.now()}`,
         type,
         issuedAt: Date.now(),
         status: 'active',
@@ -98,29 +46,22 @@ export class CredentialService {
   }
 
   async verifyCredential(
-    service: any,
+    _service: any, // Not used anymore, kept for compatibility
     verifierKey: string
   ): Promise<VerificationRecord> {
-    const verifierIds = this.getVerifierIds();
-    const programId = verifierIds[verifierKey as keyof typeof verifierIds];
-
     try {
-      const token = await this.getPartnerToken('verify');
+      const programId = getVerifierId(verifierKey as any);
       
-      const result = await service.verifyCredential({
-        authToken: token,
-        programId,
-        redirectUrl: import.meta.env.VITE_REDIRECT_URL || window.location.origin + '/callback'
-      });
+      const result = await airVerify(programId, import.meta.env.VITE_REDIRECT_URL || window.location.origin + '/callback');
 
       // Modern AIR Kit returns { status, txHash } format, not proofId
       const record: VerificationRecord = {
         id: `verify_${Date.now()}`,
         type: verifierKey,
-        status: result.status === 'verified' || result.status === 'success' ? 'success' : 'failed',
+        status: (result as any)?.status === 'verified' || (result as any)?.status === 'success' ? 'success' : 'failed',
         timestamp: Date.now(),
-        proofId: result.transactionHash || result.txHash || `tx_${Date.now()}`, // Use txHash as proof
-        txHash: result.transactionHash || result.txHash
+        proofId: (result as any)?.transactionHash || (result as any)?.txHash || `tx_${Date.now()}`, // Use txHash as proof
+        txHash: (result as any)?.transactionHash || (result as any)?.txHash
       };
 
       this.storeVerification(record);

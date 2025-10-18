@@ -1,14 +1,14 @@
+import { VerifyModal } from '@/components/airgate/VerifyModal';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { credentialService } from '@/services/credentialService';
 import { useAirKit } from '@/store/useAirKit';
 import { motion } from 'framer-motion';
 import {
-    Briefcase,
-    CheckCircle2,
-    Loader2,
-    Star,
-    TrendingUp
+  Briefcase,
+  CheckCircle2,
+  Loader2,
+  Star,
+  TrendingUp
 } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -20,8 +20,7 @@ interface DemoScenario {
   description: string;
   icon: React.ReactNode;
   requirements: string[];
-  verifierKey: string;
-  requiredCreds: string[];
+  demoKey: "defiJob" | "fanVip" | "traderTier";
   color: string;
 }
 
@@ -32,8 +31,7 @@ const scenarios: DemoScenario[] = [
     description: 'Verify credentials to access exclusive DeFi job opportunities',
     icon: <Briefcase className="h-6 w-6" />,
     requirements: ['KYC Basic Verification', 'Work History Credential'],
-    verifierKey: 'DEFI_JOB_GATE_KYC',
-    requiredCreds: ['KYC_BASIC'],
+    demoKey: 'defiJob',
     color: 'from-blue-500/20 to-cyan-500/20',
   },
   {
@@ -42,8 +40,7 @@ const scenarios: DemoScenario[] = [
     description: 'Prove fan status to unlock VIP content and experiences',
     icon: <Star className="h-6 w-6" />,
     requirements: ['Fan Badge Credential'],
-    verifierKey: 'FAN_VIP_GATE',
-    requiredCreds: ['FAN_BADGE'],
+    demoKey: 'fanVip',
     color: 'from-amber-500/20 to-orange-500/20',
   },
   {
@@ -52,66 +49,23 @@ const scenarios: DemoScenario[] = [
     description: 'Access advanced trading features based on verified experience',
     icon: <TrendingUp className="h-6 w-6" />,
     requirements: ['KYC Basic Verification', 'Trading History'],
-    verifierKey: 'TRADER_TIER_GATE',
-    requiredCreds: ['KYC_BASIC'],
+    demoKey: 'traderTier',
     color: 'from-green-500/20 to-emerald-500/20',
   },
 ];
 
 export default function Demos() {
   const navigate = useNavigate();
-  const { user, service } = useAirKit();
-  const [verifying, setVerifying] = useState<string | null>(null);
+  const { user } = useAirKit();
+  const [selectedDemo, setSelectedDemo] = useState<DemoScenario | null>(null);
 
-  const handleVerify = async (scenario: DemoScenario) => {
+  const handleVerify = (scenario: DemoScenario) => {
     if (!user) {
       toast.error('Please connect your AIR identity first');
       navigate('/auth');
       return;
     }
-
-    setVerifying(scenario.id);
-
-    try {
-      // Check if user has required credentials
-      const userCreds = credentialService.getCredentials();
-      const hasRequiredCreds = scenario.requiredCreds.every((reqCred) =>
-        userCreds.some((cred) => cred.type === reqCred && cred.status === 'active')
-      );
-
-      // Issue missing credentials if needed
-      if (!hasRequiredCreds) {
-        toast.info('Issuing required credentials...');
-        for (const credType of scenario.requiredCreds) {
-          const hasCred = userCreds.some((cred) => cred.type === credType);
-          if (!hasCred) {
-            await credentialService.issueCredential(service, credType as any, {
-              isVerified: true,
-              issuedTo: user.did,
-              timestamp: Date.now(),
-            });
-          }
-        }
-      }
-
-      // Perform verification
-      const result = await credentialService.verifyCredential(
-        service,
-        scenario.verifierKey
-      );
-
-      toast.success(
-        <div>
-          <p className="font-semibold">Verification Successful!</p>
-          <p className="text-sm">Status: {result.status}</p>
-          {result.txHash && <p className="text-sm">TX: {result.txHash}</p>}
-        </div>
-      );
-    } catch (error: any) {
-      toast.error(error.message || 'Verification failed');
-    } finally {
-      setVerifying(null);
-    }
+    setSelectedDemo(scenario);
   };
 
   return (
@@ -140,7 +94,7 @@ export default function Demos() {
             transition={{ delay: 0.1 }}
             className="mb-8"
           >
-            <Card className="glass border-white/10 p-6 bg-amber-500/10 border-amber-500/20">
+            <Card className="glass border-white/10 p-6 bg-amber-500/10">
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center flex-shrink-0">
                   ⚠️
@@ -172,12 +126,23 @@ export default function Demos() {
               key={scenario.id}
               scenario={scenario}
               onVerify={() => handleVerify(scenario)}
-              isVerifying={verifying === scenario.id}
+              isVerifying={false} // No loading state needed with modal
               disabled={!user}
               delay={0.1 + index * 0.1}
             />
           ))}
         </div>
+
+        {/* VerifyModal */}
+        {selectedDemo && (
+          <VerifyModal
+            isOpen={true}
+            onClose={() => setSelectedDemo(null)}
+            demoKey={selectedDemo.demoKey}
+            title={selectedDemo.title}
+            description={selectedDemo.description}
+          />
+        )}
 
         {/* How It Works */}
         <motion.div

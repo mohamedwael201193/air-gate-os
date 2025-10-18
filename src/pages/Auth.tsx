@@ -1,48 +1,73 @@
+import { airLogin, getAirService } from '@/air/airkit';
+import { ParticleBackground } from '@/components/ParticleBackground';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { useAirKit } from '@/store/useAirKit';
+import { motion } from 'framer-motion';
+import { CheckCircle2, Loader2, Shield } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Shield, Loader2, CheckCircle2 } from 'lucide-react';
-import { motion } from 'framer-motion';
-import { useAirKit } from '@/store/useAirKit';
 import { toast } from 'sonner';
-import { ParticleBackground } from '@/components/ParticleBackground';
 
 export default function Auth() {
   const navigate = useNavigate();
-  const { init, login, isReady, isLoading, user, error } = useAirKit();
-  const [initStatus, setInitStatus] = useState<'idle' | 'initializing' | 'ready' | 'error'>('idle');
+  const { user, setUser } = useAirKit();
+  const [step, setStep] = useState<'idle' | 'init' | 'login' | 'done' | 'error'>('idle');
+  const [error, setError] = useState<string>('');
 
   useEffect(() => {
-    if (user) {
+    // Check if user is already logged in
+    if (user && (user as any).did) {
       navigate('/profile');
       return;
     }
-
-    const initializeService = async () => {
-      setInitStatus('initializing');
+    
+    const storedUser = localStorage.getItem('airUser');
+    if (storedUser) {
       try {
-        await init();
-        setInitStatus('ready');
-        toast.success('AIR Kit initialized successfully');
-      } catch (err) {
-        setInitStatus('error');
-        toast.error('Failed to initialize AIR Kit');
+        const userData = JSON.parse(storedUser);
+        if (userData && (userData.did || userData.userDid)) {
+          setUser(userData);
+          navigate('/profile');
+          return;
+        }
+      } catch (e) {
+        // Invalid stored user data, continue with login flow
+        localStorage.removeItem('airUser');
       }
-    };
-
-    if (!isReady && initStatus === 'idle') {
-      initializeService();
     }
-  }, [user, navigate, init, isReady, initStatus]);
+  }, [navigate, user, setUser]);
 
   const handleLogin = async () => {
     try {
-      await login();
+      setStep('init');
+      setError('');
+      console.log('🟡 Initializing AIR service...');
+      await getAirService();
+      setStep('login');
+      console.log('🟡 Calling airLogin...');
+      const loginResult = await airLogin();
+      console.log('🟢 Received user from airLogin:', loginResult);
+      console.log('🟢 User type:', typeof loginResult);
+      console.log('🟢 User keys:', Object.keys(loginResult || {}));
+      console.log('🟢 Full user object:', JSON.stringify(loginResult, null, 2));
+      
+      // Store in both localStorage and Zustand store
+      localStorage.setItem('airUser', JSON.stringify(loginResult || {}));
+      setUser(loginResult);
+      console.log('🟢 Stored user in localStorage and store');
+      
+      setStep('done');
       toast.success('Login successful! Redirecting...');
-      setTimeout(() => navigate('/profile'), 1000);
-    } catch (err: any) {
-      toast.error(err.message || 'Login failed');
+      setTimeout(() => {
+        console.log('🟢 Navigating to profile...');
+        navigate('/profile');
+      }, 1000);
+    } catch (e: any) {
+      console.error('🔴 Login error:', e);
+      setError(e?.message || 'Login failed');
+      setStep('error');
+      toast.error(e?.message || 'Login failed');
     }
   };
 
@@ -72,36 +97,63 @@ export default function Auth() {
 
             {/* Initialization Status */}
             <div className="mb-6 space-y-3">
-              <StatusItem
-                label="Initializing AIR Kit"
-                status={initStatus === 'initializing' ? 'loading' : initStatus === 'ready' ? 'success' : initStatus === 'error' ? 'error' : 'idle'}
-              />
-              {initStatus === 'ready' && (
+              {step !== 'idle' && (
                 <StatusItem
-                  label="Ready for authentication"
-                  status="success"
+                  label="Initializing AIR Kit"
+                  status={step === 'init' ? 'loading' : step === 'error' ? 'error' : 'success'}
+                />
+              )}
+              {(step === 'login' || step === 'done') && (
+                <StatusItem
+                  label={step === 'login' ? 'Authenticating...' : 'Authentication complete'}
+                  status={step === 'login' ? 'loading' : 'success'}
                 />
               )}
             </div>
 
-            {/* Login Button */}
-            <Button
-              onClick={handleLogin}
-              disabled={!isReady || isLoading}
-              className="w-full btn-glow bg-gradient-cosmic hover:shadow-glow-lg text-lg py-6"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                  Authenticating...
-                </>
-              ) : (
-                <>
-                  <Shield className="h-5 w-5 mr-2" />
-                  Connect with AIR
-                </>
-              )}
-            </Button>
+            {/* Manual Login Button */}
+            {step === 'idle' && (
+              <Button
+                onClick={handleLogin}
+                className="w-full btn-glow bg-gradient-cosmic hover:shadow-glow-lg text-lg py-6"
+              >
+                <Shield className="h-5 w-5 mr-2" />
+                Connect with AIR
+              </Button>
+            )}
+
+            {/* Retry Button */}
+            {step === 'error' && (
+              <Button
+                onClick={handleLogin}
+                className="w-full btn-glow bg-gradient-cosmic hover:shadow-glow-lg text-lg py-6"
+              >
+                <Shield className="h-5 w-5 mr-2" />
+                Try Again
+              </Button>
+            )}
+
+            {/* Loading states */}
+            {(step === 'init' || step === 'login') && (
+              <Button
+                disabled
+                className="w-full btn-glow bg-gradient-cosmic hover:shadow-glow-lg text-lg py-6"
+              >
+                <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                {step === 'init' ? 'Initializing...' : 'Authenticating...'}
+              </Button>
+            )}
+
+            {/* Success state */}
+            {step === 'done' && (
+              <Button
+                disabled
+                className="w-full btn-glow bg-gradient-cosmic hover:shadow-glow-lg text-lg py-6"
+              >
+                <CheckCircle2 className="h-5 w-5 mr-2" />
+                Redirecting...
+              </Button>
+            )}
 
             {error && (
               <div className="mt-4 p-3 rounded-lg bg-destructive/10 border border-destructive/20">

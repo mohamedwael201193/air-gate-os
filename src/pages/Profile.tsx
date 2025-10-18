@@ -34,14 +34,19 @@ import { toast } from 'sonner';
 
 export default function Profile() {
   const navigate = useNavigate();
-  const { user, service } = useAirKit();
+  const { user, getService } = useAirKit();
   const [credentials, setCredentials] = useState<any[]>([]);
   const [verifications, setVerifications] = useState<any[]>([]);
   const [isIssuing, setIsIssuing] = useState(false);
   const [selectedCredType, setSelectedCredType] = useState('');
 
   useEffect(() => {
+    console.log('🔍 Profile: Current user from store:', user);
+    console.log('🔍 Profile: User type:', typeof user);
+    console.log('🔍 Profile: User keys:', user ? Object.keys(user) : 'No user');
+    
     if (!user) {
+      console.log('🔍 Profile: No user found, redirecting to auth');
       navigate('/auth');
       return;
     }
@@ -61,12 +66,12 @@ export default function Profile() {
     try {
       const credData = {
         isVerified: true,
-        issuedTo: user?.did,
+        issuedTo: user?.id || user?.did,
         timestamp: Date.now(),
       };
 
       await credentialService.issueCredential(
-        service,
+        null, // service not needed anymore
         selectedCredType as any,
         credData
       );
@@ -122,7 +127,7 @@ export default function Profile() {
                   )}
                 </div>
                 <div className="space-y-2">
-                  <InfoRow label="DID" value={user.did} copyable />
+                  <InfoRow label="DID" value={user.id || user.did} copyable />
                   {user.abstractAccountAddress && (
                     <InfoRow label="Account" value={user.abstractAccountAddress} copyable />
                   )}
