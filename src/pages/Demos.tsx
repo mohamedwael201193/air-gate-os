@@ -1,20 +1,18 @@
-import { useState } from 'react';
-import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import {
-  Briefcase,
-  Star,
-  TrendingUp,
-  CheckCircle2,
-  Loader2,
-  ExternalLink,
-} from 'lucide-react';
-import { motion } from 'framer-motion';
-import { useAirKit } from '@/store/useAirKit';
+import { Card } from '@/components/ui/card';
 import { credentialService } from '@/services/credentialService';
-import { toast } from 'sonner';
+import { useAirKit } from '@/store/useAirKit';
+import { motion } from 'framer-motion';
+import {
+    Briefcase,
+    CheckCircle2,
+    Loader2,
+    Star,
+    TrendingUp
+} from 'lucide-react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 interface DemoScenario {
   id: string;
@@ -105,7 +103,8 @@ export default function Demos() {
       toast.success(
         <div>
           <p className="font-semibold">Verification Successful!</p>
-          <p className="text-sm">Proof ID: {result.proofId}</p>
+          <p className="text-sm">Status: {result.status}</p>
+          {result.txHash && <p className="text-sm">TX: {result.txHash}</p>}
         </div>
       );
     } catch (error: any) {

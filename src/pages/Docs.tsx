@@ -1,16 +1,16 @@
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import {
-  Book,
-  Code,
-  Zap,
-  Shield,
-  ExternalLink,
-  Copy,
-  CheckCircle2,
-} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { motion } from 'framer-motion';
+import {
+    Book,
+    CheckCircle2,
+    Code,
+    Copy,
+    ExternalLink,
+    Shield,
+    Zap,
+} from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -60,7 +60,7 @@ const service = new AirService({
 });
 
 await service.init({
-  buildEnv: BUILD_ENV.DEVELOPMENT,
+  buildEnv: BUILD_ENV.SANDBOX,
   enableLogging: true,
   skipRehydration: false
 });`}

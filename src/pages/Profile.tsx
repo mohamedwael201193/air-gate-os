@@ -1,36 +1,36 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import {
-  Shield,
-  User,
-  CheckCircle2,
-  AlertCircle,
-  Plus,
-  ExternalLink,
-} from 'lucide-react';
-import { motion } from 'framer-motion';
-import { useAirKit } from '@/store/useAirKit';
-import { credentialService } from '@/services/credentialService';
 import { CredentialCard } from '@/components/CredentialCard';
-import { toast } from 'sonner';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
 } from '@/components/ui/dialog';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from '@/components/ui/select';
+import { credentialService } from '@/services/credentialService';
+import { useAirKit } from '@/store/useAirKit';
+import { motion } from 'framer-motion';
+import {
+    AlertCircle,
+    CheckCircle2,
+    ExternalLink,
+    Plus,
+    Shield,
+    User,
+} from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -260,7 +260,7 @@ export default function Profile() {
                             {record.status}
                           </Badge>
                         </td>
-                        <td className="p-4 text-sm font-mono">{record.proofId}</td>
+                        <td className="p-4 text-sm font-mono">{record.txHash || record.proofId}</td>
                         <td className="p-4">
                           {record.txHash && (
                             <a

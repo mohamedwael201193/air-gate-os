@@ -74,19 +74,6 @@ export class CredentialService {
     try {
       const token = await this.getPartnerToken('issue');
       
-      if (service.mock) {
-        // Mock issuance for development
-        const credential: CredentialData = {
-          id: `cred_${Date.now()}`,
-          type,
-          issuedAt: Date.now(),
-          status: 'active',
-          data
-        };
-        this.storeCredential(credential);
-        return credential;
-      }
-
       const result = await service.issueCredential({
         authToken: token,
         credentialId,
@@ -120,33 +107,20 @@ export class CredentialService {
     try {
       const token = await this.getPartnerToken('verify');
       
-      if (service.mock) {
-        // Mock verification for development
-        const record: VerificationRecord = {
-          id: `verify_${Date.now()}`,
-          type: verifierKey,
-          status: 'success',
-          timestamp: Date.now(),
-          proofId: `proof_${Date.now()}`,
-          txHash: `0x${Math.random().toString(16).slice(2)}`
-        };
-        this.storeVerification(record);
-        return record;
-      }
-
       const result = await service.verifyCredential({
         authToken: token,
         programId,
         redirectUrl: import.meta.env.VITE_REDIRECT_URL || window.location.origin + '/callback'
       });
 
+      // Modern AIR Kit returns { status, txHash } format, not proofId
       const record: VerificationRecord = {
         id: `verify_${Date.now()}`,
         type: verifierKey,
-        status: result.status === 'verified' ? 'success' : 'failed',
+        status: result.status === 'verified' || result.status === 'success' ? 'success' : 'failed',
         timestamp: Date.now(),
-        proofId: result.proofId || `proof_${Date.now()}`,
-        txHash: result.txHash
+        proofId: result.transactionHash || result.txHash || `tx_${Date.now()}`, // Use txHash as proof
+        txHash: result.transactionHash || result.txHash
       };
 
       this.storeVerification(record);
