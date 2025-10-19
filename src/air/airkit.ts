@@ -4,6 +4,21 @@ import { AirService, BUILD_ENV } from "@mocanetwork/airkit";
 let svc: AirService | null = null;
 let initialized = false;
 
+/**
+ * Generates a stable credentialSubject.id URI for the current user.
+ * Required by all credential schemas. Uses stored user ID when available,
+ * otherwise generates a new UUID. Returns a proper DID Web URI format.
+ */
+export function getSubjectId() {
+  try {
+    const u = JSON.parse(localStorage.getItem("airUser") || "{}");
+    const uid = u?.id || crypto.randomUUID();
+    return `did:web:${location.host}:user:${uid}`; // valid URI, stable per user
+  } catch {
+    return `did:web:${location.host}:user:${crypto.randomUUID()}`;
+  }
+}
+
 export async function getAirService() {
   if (!svc) {
     svc = new AirService({ partnerId: import.meta.env.VITE_AIR_PARTNER_ID });
@@ -74,7 +89,23 @@ export async function airLogin() {
         (result as any)?.userDid ||
         "NOT FOUND"
     );
-    return result;
+
+    // Extract user info and store in localStorage for getSubjectId
+    const userInfo = {
+      id:
+        (result as any)?.id || (result as any)?.did || (result as any)?.userDid,
+      email:
+        (result as any)?.email ||
+        (result as any)?.linkedAccounts?.find(
+          (acc: any) => acc.type === "email"
+        )?.address,
+      ...result,
+    };
+
+    console.log("📧 User Email:", userInfo.email || "NOT FOUND");
+    localStorage.setItem("airUser", JSON.stringify(userInfo));
+
+    return userInfo;
   } catch (error) {
     console.error("❌ AIR login failed:", error);
     throw error;
@@ -83,17 +114,31 @@ export async function airLogin() {
 
 export async function airIssue(
   credentialId: string,
-  subject: Record<string, unknown>,
-  issuerDid?: string
+  credentialSubject: Record<string, unknown>
 ) {
   const s = await getAirService();
   const jwt = await getPartnerToken("issue");
-  return s.issueCredential({
+  const issuerOverride = import.meta.env.VITE_AIR_ISSUER_DID_OVERRIDE?.trim();
+
+  console.log(
+    "Issuing against program:",
+    credentialId,
+    "issuerOverride?:",
+    !!issuerOverride
+  );
+
+  const params: any = {
     authToken: jwt,
     credentialId,
-    credentialSubject: subject,
-    issuerDid: issuerDid || import.meta.env.VITE_AIR_ISSUER_DID,
-  });
+    credentialSubject,
+  };
+
+  // Only include issuerDid if override is provided
+  if (issuerOverride) {
+    params.issuerDid = issuerOverride;
+  }
+
+  return s.issueCredential(params);
 }
 
 export async function airVerify(programId: string, redirectUrl?: string) {

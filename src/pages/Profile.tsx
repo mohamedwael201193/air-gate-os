@@ -1,36 +1,36 @@
-import { CredentialCard } from '@/components/CredentialCard';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { CredentialCard } from "@/components/CredentialCard";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from '@/components/ui/dialog';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-import { credentialService } from '@/services/credentialService';
-import { useAirKit } from '@/store/useAirKit';
-import { motion } from 'framer-motion';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { credentialService } from "@/services/credentialService";
+import { useAirKit } from "@/store/useAirKit";
+import { motion } from "framer-motion";
 import {
-    AlertCircle,
-    CheckCircle2,
-    ExternalLink,
-    Plus,
-    Shield,
-    User,
-} from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
+  AlertCircle,
+  CheckCircle2,
+  ExternalLink,
+  Plus,
+  Shield,
+  User,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -38,16 +38,16 @@ export default function Profile() {
   const [credentials, setCredentials] = useState<any[]>([]);
   const [verifications, setVerifications] = useState<any[]>([]);
   const [isIssuing, setIsIssuing] = useState(false);
-  const [selectedCredType, setSelectedCredType] = useState('');
+  const [selectedCredType, setSelectedCredType] = useState("");
 
   useEffect(() => {
-    console.log('🔍 Profile: Current user from store:', user);
-    console.log('🔍 Profile: User type:', typeof user);
-    console.log('🔍 Profile: User keys:', user ? Object.keys(user) : 'No user');
-    
+    console.log("🔍 Profile: Current user from store:", user);
+    console.log("🔍 Profile: User type:", typeof user);
+    console.log("🔍 Profile: User keys:", user ? Object.keys(user) : "No user");
+
     if (!user) {
-      console.log('🔍 Profile: No user found, redirecting to auth');
-      navigate('/auth');
+      console.log("🔍 Profile: No user found, redirecting to auth");
+      navigate("/auth");
       return;
     }
 
@@ -58,7 +58,7 @@ export default function Profile() {
 
   const handleIssueCredential = async () => {
     if (!selectedCredType) {
-      toast.error('Please select a credential type');
+      toast.error("Please select a credential type");
       return;
     }
 
@@ -77,10 +77,10 @@ export default function Profile() {
       );
 
       setCredentials(credentialService.getCredentials());
-      toast.success('Credential issued successfully!');
-      setSelectedCredType('');
+      toast.success("Credential issued successfully!");
+      setSelectedCredType("");
     } catch (error: any) {
-      toast.error(error.message || 'Failed to issue credential');
+      toast.error(error.message || "Failed to issue credential");
     } finally {
       setIsIssuing(false);
     }
@@ -88,7 +88,9 @@ export default function Profile() {
 
   if (!user) return null;
 
-  const explorerBase = import.meta.env.VITE_EXPLORER_BASE_URL || 'https://devnet-scan.mocachain.tech';
+  const explorerBase =
+    import.meta.env.VITE_EXPLORER_BASE_URL ||
+    "https://devnet-scan.mocachain.tech";
 
   return (
     <div className="min-h-screen pt-20 pb-12">
@@ -102,7 +104,9 @@ export default function Profile() {
           <h1 className="text-4xl font-bold mb-2">
             <span className="gradient-text">My Profile</span>
           </h1>
-          <p className="text-muted-foreground">Manage your AIR identity and credentials</p>
+          <p className="text-muted-foreground">
+            Manage your AIR identity and credentials
+          </p>
         </motion.div>
 
         {/* User Info Section */}
@@ -118,7 +122,13 @@ export default function Profile() {
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-2">
-                  <h2 className="text-2xl font-bold">{user.email || 'Anonymous User'}</h2>
+                  <h2 className="text-2xl font-bold">
+                    {user.email ||
+                      user.linkedAccounts?.find(
+                        (acc: any) => acc.type === "email"
+                      )?.address ||
+                      "AIR User"}
+                  </h2>
                   {user.isMFASetup && (
                     <Badge className="bg-accent text-accent-foreground">
                       <CheckCircle2 className="h-3 w-3 mr-1" />
@@ -127,16 +137,37 @@ export default function Profile() {
                   )}
                 </div>
                 <div className="space-y-2">
+                  {(user.email ||
+                    user.linkedAccounts?.find(
+                      (acc: any) => acc.type === "email"
+                    )?.address) && (
+                    <InfoRow
+                      label="Email"
+                      value={
+                        user.email ||
+                        user.linkedAccounts?.find(
+                          (acc: any) => acc.type === "email"
+                        )?.address
+                      }
+                      copyable
+                    />
+                  )}
                   <InfoRow label="DID" value={user.id || user.did} copyable />
                   {user.abstractAccountAddress && (
-                    <InfoRow label="Account" value={user.abstractAccountAddress} copyable />
+                    <InfoRow
+                      label="Account"
+                      value={user.abstractAccountAddress}
+                      copyable
+                    />
                   )}
                 </div>
                 {!user.isMFASetup && (
                   <div className="mt-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-start gap-2">
                     <AlertCircle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-sm font-medium text-amber-500">MFA Setup Required</p>
+                      <p className="text-sm font-medium text-amber-500">
+                        MFA Setup Required
+                      </p>
                       <p className="text-xs text-amber-500/80 mt-1">
                         Enable multi-factor authentication for enhanced security
                       </p>
@@ -175,12 +206,17 @@ export default function Profile() {
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
-                  <Select value={selectedCredType} onValueChange={setSelectedCredType}>
+                  <Select
+                    value={selectedCredType}
+                    onValueChange={setSelectedCredType}
+                  >
                     <SelectTrigger className="glass border-white/10">
                       <SelectValue placeholder="Select credential type" />
                     </SelectTrigger>
                     <SelectContent className="glass border-white/10">
-                      <SelectItem value="KYC_BASIC">KYC Basic Verification</SelectItem>
+                      <SelectItem value="KYC_BASIC">
+                        KYC Basic Verification
+                      </SelectItem>
                       <SelectItem value="WORK_HISTORY">Work History</SelectItem>
                       <SelectItem value="FAN_BADGE">Fan Badge</SelectItem>
                     </SelectContent>
@@ -190,7 +226,7 @@ export default function Profile() {
                     disabled={isIssuing || !selectedCredType}
                     className="w-full bg-gradient-cosmic"
                   >
-                    {isIssuing ? 'Issuing...' : 'Issue Credential'}
+                    {isIssuing ? "Issuing..." : "Issue Credential"}
                   </Button>
                 </div>
               </DialogContent>
@@ -211,8 +247,10 @@ export default function Profile() {
                 <CredentialCard
                   key={cred.id}
                   credential={cred}
-                  onView={() => toast.info('Credential details coming soon')}
-                  onShare={() => toast.info('Sharing functionality coming soon')}
+                  onView={() => toast.info("Credential details coming soon")}
+                  onShare={() =>
+                    toast.info("Sharing functionality coming soon")
+                  }
                 />
               ))}
             </div>
@@ -240,16 +278,29 @@ export default function Profile() {
                 <table className="w-full">
                   <thead className="border-b border-white/10">
                     <tr className="text-left">
-                      <th className="p-4 text-muted-foreground font-medium">Date</th>
-                      <th className="p-4 text-muted-foreground font-medium">Type</th>
-                      <th className="p-4 text-muted-foreground font-medium">Status</th>
-                      <th className="p-4 text-muted-foreground font-medium">Proof ID</th>
-                      <th className="p-4 text-muted-foreground font-medium">Actions</th>
+                      <th className="p-4 text-muted-foreground font-medium">
+                        Date
+                      </th>
+                      <th className="p-4 text-muted-foreground font-medium">
+                        Type
+                      </th>
+                      <th className="p-4 text-muted-foreground font-medium">
+                        Status
+                      </th>
+                      <th className="p-4 text-muted-foreground font-medium">
+                        Proof ID
+                      </th>
+                      <th className="p-4 text-muted-foreground font-medium">
+                        Actions
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {verifications.map((record) => (
-                      <tr key={record.id} className="border-b border-white/5 hover:bg-white/5">
+                      <tr
+                        key={record.id}
+                        className="border-b border-white/5 hover:bg-white/5"
+                      >
                         <td className="p-4 text-sm">
                           {new Date(record.timestamp).toLocaleString()}
                         </td>
@@ -257,15 +308,17 @@ export default function Profile() {
                         <td className="p-4">
                           <Badge
                             className={
-                              record.status === 'success'
-                                ? 'bg-accent text-accent-foreground'
-                                : 'bg-destructive text-destructive-foreground'
+                              record.status === "success"
+                                ? "bg-accent text-accent-foreground"
+                                : "bg-destructive text-destructive-foreground"
                             }
                           >
                             {record.status}
                           </Badge>
                         </td>
-                        <td className="p-4 text-sm font-mono">{record.txHash || record.proofId}</td>
+                        <td className="p-4 text-sm font-mono">
+                          {record.txHash || record.proofId}
+                        </td>
                         <td className="p-4">
                           {record.txHash && (
                             <a
@@ -292,10 +345,18 @@ export default function Profile() {
   );
 }
 
-function InfoRow({ label, value, copyable }: { label: string; value: string; copyable?: boolean }) {
+function InfoRow({
+  label,
+  value,
+  copyable,
+}: {
+  label: string;
+  value: string;
+  copyable?: boolean;
+}) {
   const handleCopy = () => {
     navigator.clipboard.writeText(value);
-    toast.success('Copied to clipboard');
+    toast.success("Copied to clipboard");
   };
 
   return (

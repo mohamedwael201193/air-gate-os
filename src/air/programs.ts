@@ -1,6 +1,8 @@
 // Program ID management for AIR Kit credentials and verifiers
 
-export function getIssuerId(type: "KYC_BASIC" | "WORK_HISTORY" | "FAN_BADGE"): string {
+export function getIssuerId(
+  type: "KYC_BASIC" | "WORK_HISTORY" | "FAN_BADGE"
+): string {
   const programIds = getIssuerProgramIds();
   const id = programIds[type];
   if (!id) {
@@ -9,7 +11,13 @@ export function getIssuerId(type: "KYC_BASIC" | "WORK_HISTORY" | "FAN_BADGE"): s
   return id;
 }
 
-export function getVerifierId(type: "DEFI_JOB_GATE_KYC" | "DEFI_JOB_GATE_WORK" | "FAN_VIP_GATE" | "TRADER_TIER_GATE"): string {
+export function getVerifierId(
+  type:
+    | "DEFI_JOB_GATE_KYC"
+    | "DEFI_JOB_GATE_WORK"
+    | "FAN_VIP_GATE"
+    | "TRADER_TIER_GATE"
+): string {
   const programIds = getVerifierProgramIds();
   const id = programIds[type];
   if (!id) {
@@ -18,29 +26,24 @@ export function getVerifierId(type: "DEFI_JOB_GATE_KYC" | "DEFI_JOB_GATE_WORK" |
   return id;
 }
 
-function getIssuerProgramIds() {
+function loadJsonEnv<T = any>(key: string): T {
+  const raw = (import.meta.env[key] ?? "").toString().trim();
+  // strip accidental surrounding quotes
+  const cleaned = raw.replace(/^'+|'+$/g, "").replace(/^"+|"+$/g, "");
+  if (!cleaned) {
+    throw new Error(`Environment variable ${key} is not set`);
+  }
   try {
-    return JSON.parse(import.meta.env.VITE_ISSUER_PROGRAM_IDS || '{}');
-  } catch {
-    // Fallback IDs for development
-    return {
-      KYC_BASIC: 'c21s90g0pcu4m00C2599ez',
-      WORK_HISTORY: 'c21s90g0pe1vl00d99732s',
-      FAN_BADGE: 'c21s90g0pf0lb00e8395zm'
-    };
+    return JSON.parse(cleaned) as T;
+  } catch (e) {
+    throw new Error(`Env ${key} is not valid JSON. Value: ${raw.slice(0, 60)}`);
   }
 }
 
+function getIssuerProgramIds() {
+  return loadJsonEnv<Record<string, string>>("VITE_ISSUER_PROGRAM_IDS");
+}
+
 function getVerifierProgramIds() {
-  try {
-    return JSON.parse(import.meta.env.VITE_VERIFIER_PROGRAM_IDS || '{}');
-  } catch {
-    // Fallback IDs for development
-    return {
-      DEFI_JOB_GATE_KYC: 'c21s9030ptsdv004534lxx',
-      DEFI_JOB_GATE_WORK: 'c21s9030qfcmm005534IFW',
-      FAN_VIP_GATE: 'c21s9030qlq2y0065341JX',
-      TRADER_TIER_GATE: 'c21s9030qnpvw0075341e7'
-    };
-  }
+  return loadJsonEnv<Record<string, string>>("VITE_VERIFIER_PROGRAM_IDS");
 }
