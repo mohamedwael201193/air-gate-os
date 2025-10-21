@@ -1,3 +1,4 @@
+import { getUserProfile } from "@/air/airkit";
 import { CredentialCard } from "@/components/CredentialCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ import {
   AlertCircle,
   CheckCircle2,
   ExternalLink,
+  Mail,
   Plus,
   Shield,
   User,
@@ -39,6 +41,7 @@ export default function Profile() {
   const [verifications, setVerifications] = useState<any[]>([]);
   const [isIssuing, setIsIssuing] = useState(false);
   const [selectedCredType, setSelectedCredType] = useState("");
+  const [userProfile, setUserProfile] = useState<any>(null);
 
   useEffect(() => {
     console.log("🔍 Profile: Current user from store:", user);
@@ -50,6 +53,56 @@ export default function Profile() {
       navigate("/auth");
       return;
     }
+
+    // Get user profile with real data
+    let profile = getUserProfile();
+
+    // If profile is null or shows default, try to build from user object
+    if (!profile || profile.name === "AIR User") {
+      console.log("🔄 Profile: Building from user object as fallback");
+      const emailAccount = user?.linkedAccounts?.find(
+        (acc: any) => acc.type === "email"
+      );
+      const walletAccount = user?.linkedAccounts?.find(
+        (acc: any) => acc.type === "wallet"
+      );
+
+      const email = user?.email || emailAccount?.address;
+      let displayName = user?.name || user?.given_name;
+
+      // Derive name from email if needed
+      if (!displayName && email) {
+        const localPart = email.split("@")[0];
+        displayName = localPart
+          .split(/[._-]/)
+          .map(
+            (part: string) =>
+              part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()
+          )
+          .join(" ");
+      }
+
+      const customAuth = user?.linkedAccounts?.find(
+        (acc: any) => acc.type === "custom_auth"
+      );
+
+      profile = {
+        name: displayName || "AIR User",
+        email: email || "Not provided",
+        did: user?.id || user?.did || "Not available",
+        account:
+          walletAccount?.address ||
+          user?.wallet?.address ||
+          user?.abstractAccountAddress ||
+          "Not connected",
+        customUserId: customAuth?.customUserId,
+        linkedAccounts: user?.linkedAccounts || [],
+        raw: user,
+      };
+    }
+
+    console.log("📋 User Profile:", profile);
+    setUserProfile(profile);
 
     // Load data
     setCredentials(credentialService.getCredentials());
@@ -121,14 +174,28 @@ export default function Profile() {
                 <User className="h-8 w-8 text-white" />
               </div>
               <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-2 mb-2 flex-wrap">
                   <h2 className="text-2xl font-bold">
-                    {user.email ||
-                      user.linkedAccounts?.find(
-                        (acc: any) => acc.type === "email"
-                      )?.address ||
-                      "AIR User"}
+                    {userProfile?.name || "AIR User"}
+                    {userProfile?.name === "AIR User" &&
+                      userProfile?.email &&
+                      userProfile.email !== "Not provided" && (
+                        <span className="text-muted-foreground text-lg ml-2">
+                          ({userProfile.email})
+                        </span>
+                      )}
                   </h2>
+                  {userProfile?.name !== "AIR User" &&
+                    userProfile?.email &&
+                    userProfile.email !== "Not provided" && (
+                      <Badge
+                        variant="outline"
+                        className="flex items-center gap-1"
+                      >
+                        <Mail className="h-3 w-3" />
+                        {userProfile.email}
+                      </Badge>
+                    )}
                   {user.isMFASetup && (
                     <Badge className="bg-accent text-accent-foreground">
                       <CheckCircle2 className="h-3 w-3 mr-1" />
@@ -137,26 +204,31 @@ export default function Profile() {
                   )}
                 </div>
                 <div className="space-y-2">
-                  {(user.email ||
-                    user.linkedAccounts?.find(
-                      (acc: any) => acc.type === "email"
-                    )?.address) && (
+                  {userProfile?.email &&
+                    userProfile.email !== "Not provided" && (
+                      <InfoRow
+                        label="Email"
+                        value={userProfile.email}
+                        copyable
+                      />
+                    )}
+                  <InfoRow
+                    label="DID"
+                    value={userProfile?.did || "Not available"}
+                    copyable
+                  />
+                  {userProfile?.account &&
+                    userProfile.account !== "Not connected" && (
+                      <InfoRow
+                        label="Wallet"
+                        value={userProfile.account}
+                        copyable
+                      />
+                    )}
+                  {userProfile?.customUserId && (
                     <InfoRow
-                      label="Email"
-                      value={
-                        user.email ||
-                        user.linkedAccounts?.find(
-                          (acc: any) => acc.type === "email"
-                        )?.address
-                      }
-                      copyable
-                    />
-                  )}
-                  <InfoRow label="DID" value={user.id || user.did} copyable />
-                  {user.abstractAccountAddress && (
-                    <InfoRow
-                      label="Account"
-                      value={user.abstractAccountAddress}
+                      label="Custom User ID"
+                      value={userProfile.customUserId}
                       copyable
                     />
                   )}
