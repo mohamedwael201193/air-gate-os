@@ -146,6 +146,6 @@ export const SDK_CONFIG = {
   contractAddress: CONTRACT_ADDRESS,
   rpcUrl: RPC_URL,
   chainId: 5151,
-  explorerUrl: "https://devnet-scan.mocachain.tech",
+  explorerUrl: "https://devnet-scan.mocachain.org",
   network: "Moca Devnet",
 };
