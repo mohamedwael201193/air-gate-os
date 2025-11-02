@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { credentialService } from "@/services/credentialService";
+import { trustService, type TrustProfile } from "@/services/trustService";
 import { useAirKit } from "@/store/useAirKit";
 import { motion } from "framer-motion";
 import {
@@ -28,6 +29,7 @@ import {
   Mail,
   Plus,
   Shield,
+  Star,
   User,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -42,6 +44,8 @@ export default function Profile() {
   const [isIssuing, setIsIssuing] = useState(false);
   const [selectedCredType, setSelectedCredType] = useState("");
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [trustProfile, setTrustProfile] = useState<TrustProfile | null>(null);
+  const [loadingTrust, setLoadingTrust] = useState(true);
 
   useEffect(() => {
     console.log("🔍 Profile: Current user from store:", user);
@@ -103,6 +107,27 @@ export default function Profile() {
 
     console.log("📋 User Profile:", profile);
     setUserProfile(profile);
+
+    // Load trust profile from blockchain
+    const loadTrustProfile = async () => {
+      if (profile?.account && profile.account !== "Not connected") {
+        try {
+          setLoadingTrust(true);
+          const trust = await trustService.getTrustProfile(profile.account);
+          setTrustProfile(trust);
+          console.log("🔗 Trust Profile loaded:", trust);
+        } catch (error) {
+          console.error("Failed to load trust profile:", error);
+          setTrustProfile(null);
+        } finally {
+          setLoadingTrust(false);
+        }
+      } else {
+        setLoadingTrust(false);
+      }
+    };
+
+    loadTrustProfile();
 
     // Load data
     setCredentials(credentialService.getCredentials());
@@ -202,6 +227,12 @@ export default function Profile() {
                       MFA Enabled
                     </Badge>
                   )}
+                  {!loadingTrust && trustProfile && (
+                    <Badge className="bg-gradient-cosmic text-white flex items-center gap-1">
+                      <Star className="h-3 w-3" />
+                      Trust Score: {trustProfile.trustScore}
+                    </Badge>
+                  )}
                 </div>
                 <div className="space-y-2">
                   {userProfile?.email &&
@@ -250,6 +281,105 @@ export default function Profile() {
             </div>
           </Card>
         </motion.div>
+
+        {/* On-Chain Trust Profile */}
+        {userProfile?.account && userProfile.account !== "Not connected" && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+          >
+            <Card className="glass border-white/10 p-6 mb-8 bg-gradient-to-br from-blue-500/10 to-cyan-500/10">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center flex-shrink-0">
+                  <Shield className="h-6 w-6 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold mb-3 flex items-center gap-2">
+                    On-Chain Trust Profile
+                    {!loadingTrust && trustProfile && (
+                      <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
+                        Verified On-Chain
+                      </Badge>
+                    )}
+                  </h3>
+                  {loadingTrust ? (
+                    <div className="text-muted-foreground">
+                      Loading trust profile...
+                    </div>
+                  ) : trustProfile ? (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+                          <div className="text-sm text-muted-foreground mb-1">
+                            Trust Score
+                          </div>
+                          <div className="text-2xl font-bold text-blue-400 flex items-center gap-2">
+                            <Star className="h-5 w-5" />
+                            {trustProfile.trustScore}
+                          </div>
+                        </div>
+                        <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+                          <div className="text-sm text-muted-foreground mb-1">
+                            Verified Proofs
+                          </div>
+                          <div className="text-2xl font-bold text-green-400">
+                            {trustProfile.proofTypes.length}
+                          </div>
+                        </div>
+                        <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+                          <div className="text-sm text-muted-foreground mb-1">
+                            Endorsements
+                          </div>
+                          <div className="text-2xl font-bold text-purple-400">
+                            {trustProfile.endorsementCount}
+                          </div>
+                        </div>
+                      </div>
+                      {trustProfile.proofTypes.length > 0 && (
+                        <div>
+                          <div className="text-sm font-medium mb-2">
+                            Registered Proofs:
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {trustProfile.proofTypes.map((proofType) => (
+                              <Badge
+                                key={proofType}
+                                variant="outline"
+                                className="bg-blue-500/10 border-blue-500/30"
+                              >
+                                {proofType}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      <div className="text-xs text-muted-foreground">
+                        Last activity:{" "}
+                        {trustProfile.lastActivityTimestamp > 0
+                          ? new Date(
+                              trustProfile.lastActivityTimestamp * 1000
+                            ).toLocaleString()
+                          : "No activity yet"}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-muted-foreground">
+                      <p className="mb-2">
+                        No on-chain trust profile found. Earn credentials to
+                        build your trust score!
+                      </p>
+                      <p className="text-xs">
+                        Trust scores are automatically registered on the Moca
+                        blockchain when you earn verifiable credentials.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Card>
+          </motion.div>
+        )}
 
         {/* Credentials Section */}
         <motion.div

@@ -8,6 +8,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { getProofType, registerProofOnChain } from "@/services/backendService";
+import { useAirKit } from "@/store/useAirKit";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -28,10 +30,61 @@ export function VerifyModal({
   description,
 }: VerifyModalProps) {
   const [step, setStep] = useState<
-    "idle" | "login" | "issuing" | "verifying" | "success" | "error"
+    | "idle"
+    | "login"
+    | "issuing"
+    | "verifying"
+    | "registering"
+    | "success"
+    | "error"
   >("idle");
   const [results, setResults] = useState<any>(null);
   const [error, setError] = useState<string>("");
+  const { user } = useAirKit();
+
+  /**
+   * Helper to register credential on-chain
+   */
+  const registerCredential = async (
+    credentialType: string,
+    credentialId: string
+  ) => {
+    try {
+      const userAddress = user?.abstractAccountAddress;
+      if (!userAddress) {
+        console.warn("No wallet address found, skipping on-chain registration");
+        return;
+      }
+
+      const proofType = getProofType(credentialType);
+      const issuer = import.meta.env.VITE_AIR_ISSUER_DID || "did:air:unknown";
+
+      console.log(
+        `📝 Registering ${proofType} proof on-chain for ${userAddress}`
+      );
+
+      const result = await registerProofOnChain({
+        userAddress,
+        proofType,
+        credentialId,
+        issuer,
+      });
+
+      if (result.success) {
+        console.log("✅ Proof registration successful:", result);
+        if (result.txHash) {
+          toast.success(
+            `Proof registered on-chain! TX: ${result.txHash.slice(0, 10)}...`
+          );
+        }
+      } else {
+        console.warn("⚠️ Proof registration pending:", result.error);
+      }
+    } catch (error) {
+      console.error("Failed to register proof on-chain:", error);
+      // Don't fail the whole flow if registration fails
+    }
+  };
 
   const runFlow = async () => {
     try {
@@ -58,6 +111,11 @@ export function VerifyModal({
           id: getSubjectId(),
         });
 
+        // Register proofs on-chain
+        setStep("registering");
+        await registerCredential("KYC_BASIC", `kyc_${Date.now()}`);
+        await registerCredential("WORK_HISTORY", `work_${Date.now()}`);
+
         setStep("verifying");
         // Verify both gates
         const k = await airVerify(
@@ -80,6 +138,10 @@ export function VerifyModal({
           id: getSubjectId(),
         });
 
+        // Register proof on-chain
+        setStep("registering");
+        await registerCredential("FAN_BADGE", `fan_${Date.now()}`);
+
         setStep("verifying");
         const result = await airVerify(
           getVerifierId("FAN_VIP_GATE"),
@@ -96,6 +158,10 @@ export function VerifyModal({
           level: "BASIC",
           id: getSubjectId(),
         });
+
+        // Register proof on-chain
+        setStep("registering");
+        await registerCredential("KYC_BASIC", `kyc_trader_${Date.now()}`);
 
         setStep("verifying");
         const result = await airVerify(
@@ -134,6 +200,8 @@ export function VerifyModal({
         return "Authenticating with AIR...";
       case "issuing":
         return "Issuing required credentials...";
+      case "registering":
+        return "Registering proofs on-chain...";
       case "verifying":
         return "Running verification...";
       case "success":

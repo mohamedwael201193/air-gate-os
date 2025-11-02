@@ -97,6 +97,130 @@ console.log('User DID:', user.did);`}
           </Card>
         </motion.section>
 
+        {/* Smart Contract & SDK */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="mb-12"
+        >
+          <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+            <Server className="h-6 w-6 text-primary" />
+            Smart Contract & SDK
+          </h2>
+          <Card className="glass border-white/10 p-6 mb-4">
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-xl font-bold mb-3 flex items-center gap-2">
+                  <Shield className="h-5 w-5 text-blue-400" />
+                  On-Chain Trust Registry
+                </h3>
+                <p className="text-muted-foreground mb-4">
+                  ProofOfWorkRegistry smart contract deployed on Moca Network
+                  Devnet provides immutable, verifiable credential storage with
+                  automated trust score calculation.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <InfoBox
+                    label="Contract Address"
+                    value="0x77F97D9a76F4c262c2235FD9b7F418A7c0C75D10"
+                    copyable
+                  />
+                  <InfoBox
+                    label="Network"
+                    value="Moca Devnet (Chain ID 5151)"
+                  />
+                  <InfoBox
+                    label="Explorer"
+                    value="devnet-scan.mocachain.tech"
+                    link={`https://devnet-scan.mocachain.tech/address/0x77F97D9a76F4c262c2235FD9b7F418A7c0C75D10`}
+                  />
+                  <InfoBox
+                    label="RPC Endpoint"
+                    value="devnet-rpc.mocachain.org"
+                  />
+                </div>
+              </div>
+
+              <div className="border-t border-white/10 pt-6">
+                <h3 className="text-xl font-bold mb-3 flex items-center gap-2">
+                  <Terminal className="h-5 w-5 text-green-400" />
+                  Trust Score Calculation
+                </h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between p-2 rounded bg-white/5">
+                    <span>KYC Proof</span>
+                    <Badge variant="outline">+30 points</Badge>
+                  </div>
+                  <div className="flex justify-between p-2 rounded bg-white/5">
+                    <span>Work History Proof</span>
+                    <Badge variant="outline">+50 points</Badge>
+                  </div>
+                  <div className="flex justify-between p-2 rounded bg-white/5">
+                    <span>Education Proof</span>
+                    <Badge variant="outline">+40 points</Badge>
+                  </div>
+                  <div className="flex justify-between p-2 rounded bg-white/5">
+                    <span>Community Proof</span>
+                    <Badge variant="outline">+25 points</Badge>
+                  </div>
+                  <div className="flex justify-between p-2 rounded bg-white/5">
+                    <span>Professional License</span>
+                    <Badge variant="outline">+60 points</Badge>
+                  </div>
+                  <div className="flex justify-between p-2 rounded bg-white/5">
+                    <span>Skill Proof</span>
+                    <Badge variant="outline">+35 points</Badge>
+                  </div>
+                  <div className="flex justify-between p-2 rounded bg-white/5 font-bold">
+                    <span>Profile Endorsement</span>
+                    <Badge className="bg-purple-500">+10 points each</Badge>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t border-white/10 pt-6">
+                <h3 className="text-xl font-bold mb-3 flex items-center gap-2">
+                  <Globe className="h-5 w-5 text-purple-400" />
+                  AirGate SDK
+                </h3>
+                <p className="text-muted-foreground mb-4">
+                  Lightweight TypeScript SDK for integrating trust verification
+                  into any application.
+                </p>
+                <QuickStartStep
+                  number="1"
+                  title="Import SDK"
+                  code={`import { getTrustScore, verifyAddress, getProofTypes } from '@/sdk/airgate';`}
+                />
+                <QuickStartStep
+                  number="2"
+                  title="Check Trust Score"
+                  code={`const score = await getTrustScore('0x...');
+console.log('Trust score:', score);`}
+                />
+                <QuickStartStep
+                  number="3"
+                  title="Verify Credentials"
+                  code={`const hasKYC = await verifyAddress('0x...', 'KYC');
+if (hasKYC) {
+  console.log('✅ KYC verified');
+}`}
+                />
+                <div className="mt-4 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                  <p className="text-sm text-blue-400">
+                    📚 See{" "}
+                    <code className="bg-white/10 px-2 py-1 rounded">
+                      src/sdk/README.md
+                    </code>{" "}
+                    for complete API documentation and examples
+                  </p>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </motion.section>
+
         {/* Core Features */}
         <motion.section
           initial={{ opacity: 0, y: 20 }}
@@ -508,6 +632,62 @@ function QuickStartStep({ number, title, code }: any) {
       <pre className="bg-black/40 p-3 rounded-lg overflow-x-auto">
         <code className="text-xs text-accent">{code}</code>
       </pre>
+    </div>
+  );
+}
+
+function InfoBox({
+  label,
+  value,
+  copyable,
+  link,
+}: {
+  label: string;
+  value: string;
+  copyable?: boolean;
+  link?: string;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(value);
+    setCopied(true);
+    toast.success("Copied to clipboard");
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+      <div className="text-xs text-muted-foreground mb-1">{label}</div>
+      <div className="flex items-center justify-between gap-2">
+        {link ? (
+          <a
+            href={link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm font-mono hover:text-primary transition-colors flex items-center gap-1"
+          >
+            {value}
+            <ExternalLink className="h-3 w-3" />
+          </a>
+        ) : (
+          <div className="text-sm font-mono break-all">{value}</div>
+        )}
+        {copyable && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={handleCopy}
+            className="h-6 w-6 p-0 flex-shrink-0"
+          >
+            {copied ? (
+              <CheckCircle2 className="h-3 w-3 text-accent" />
+            ) : (
+              <Copy className="h-3 w-3" />
+            )}
+          </Button>
+        )}
+      </div>
     </div>
   );
 }
