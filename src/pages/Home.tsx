@@ -1,11 +1,18 @@
-import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Shield, Lock, Zap, Users, ArrowRight, CheckCircle } from 'lucide-react';
-import { motion } from 'framer-motion';
-import { ParticleBackground } from '@/components/ParticleBackground';
-import { credentialService } from '@/services/credentialService';
-import { useEffect, useState } from 'react';
+import { ParticleBackground } from "@/components/ParticleBackground";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { credentialService } from "@/services/credentialService";
+import { motion } from "framer-motion";
+import {
+  ArrowRight,
+  CheckCircle,
+  Lock,
+  Shield,
+  Users,
+  Zap,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
 export default function Home() {
   const [stats, setStats] = useState({
@@ -14,15 +21,27 @@ export default function Home() {
     successRate: 0,
   });
 
+  const [blockchainStats, setBlockchainStats] = useState({
+    totalProofsOnChain: 0,
+    totalUsersOnChain: 0,
+    averageProofsPerUser: "0",
+  });
+
   useEffect(() => {
+    // Get local statistics
     const statistics = credentialService.getStatistics();
     setStats(statistics);
+
+    // Get blockchain statistics
+    credentialService.getBlockchainStatistics().then((bcStats) => {
+      setBlockchainStats(bcStats);
+    });
   }, []);
 
   return (
     <div className="min-h-screen pt-20">
       <ParticleBackground />
-      
+
       {/* Hero Section */}
       <section className="relative container mx-auto px-6 py-20">
         <motion.div
@@ -34,26 +53,36 @@ export default function Home() {
           <div className="inline-block mb-6">
             <Shield className="h-20 w-20 text-primary animate-float" />
           </div>
-          
+
           <h1 className="text-5xl md:text-7xl font-bold mb-6">
             <span className="gradient-text">Drop-in Eligibility</span>
             <br />
-            <span className="text-foreground">Powered by Zero-Knowledge Proofs</span>
+            <span className="text-foreground">
+              Powered by Zero-Knowledge Proofs
+            </span>
           </h1>
-          
+
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Transform your verification infrastructure with AirGate OS. Issue and verify credentials 
-            without compromising user privacy, powered by Moca Network's AIR Kit.
+            Transform your verification infrastructure with AirGate OS. Issue
+            and verify credentials without compromising user privacy, powered by
+            Moca Network's AIR Kit.
           </p>
-          
+
           <div className="flex flex-wrap gap-4 justify-center">
             <Link to="/auth">
-              <Button size="lg" className="btn-glow bg-gradient-cosmic hover:shadow-glow-lg text-lg px-8">
+              <Button
+                size="lg"
+                className="btn-glow bg-gradient-cosmic hover:shadow-glow-lg text-lg px-8"
+              >
                 Get Started <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
             <Link to="/demos">
-              <Button size="lg" variant="outline" className="border-white/20 hover:bg-white/5 text-lg px-8">
+              <Button
+                size="lg"
+                variant="outline"
+                className="border-white/20 hover:bg-white/5 text-lg px-8"
+              >
                 View Demos
               </Button>
             </Link>
@@ -66,20 +95,23 @@ export default function Home() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <StatsCard
             icon={<Shield />}
-            value={stats.totalCredentials}
-            label="Credentials Issued"
+            value={blockchainStats.totalProofsOnChain}
+            label="Proofs On-Chain"
+            subtitle="Live from Moca Network"
             delay={0.1}
           />
           <StatsCard
-            icon={<CheckCircle />}
-            value={stats.totalVerifications}
-            label="Verifications Completed"
+            icon={<Users />}
+            value={blockchainStats.totalUsersOnChain}
+            label="Verified Users"
+            subtitle="Unique wallet addresses"
             delay={0.2}
           />
           <StatsCard
-            icon={<Zap />}
-            value={`${stats.successRate}%`}
-            label="Success Rate"
+            icon={<CheckCircle />}
+            value={blockchainStats.averageProofsPerUser}
+            label="Avg Proofs/User"
+            subtitle="Trust score growth"
             delay={0.3}
           />
         </div>
@@ -148,10 +180,14 @@ export default function Home() {
             Ready to Transform Your Verification Flow?
           </h2>
           <p className="text-muted-foreground text-lg mb-8 max-w-2xl mx-auto">
-            Join the future of Web3 identity. Start issuing and verifying credentials in minutes.
+            Join the future of Web3 identity. Start issuing and verifying
+            credentials in minutes.
           </p>
           <Link to="/auth">
-            <Button size="lg" className="btn-glow bg-gradient-cosmic hover:shadow-glow-lg text-lg px-8">
+            <Button
+              size="lg"
+              className="btn-glow bg-gradient-cosmic hover:shadow-glow-lg text-lg px-8"
+            >
               Connect AIR Identity <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </Link>
@@ -161,7 +197,7 @@ export default function Home() {
   );
 }
 
-function StatsCard({ icon, value, label, delay }: any) {
+function StatsCard({ icon, value, label, subtitle, delay }: any) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -174,7 +210,12 @@ function StatsCard({ icon, value, label, delay }: any) {
           {icon}
         </div>
         <div className="text-4xl font-bold gradient-text mb-2">{value}</div>
-        <div className="text-muted-foreground">{label}</div>
+        <div className="text-muted-foreground font-medium">{label}</div>
+        {subtitle && (
+          <div className="text-xs text-muted-foreground/70 mt-1">
+            {subtitle}
+          </div>
+        )}
       </Card>
     </motion.div>
   );

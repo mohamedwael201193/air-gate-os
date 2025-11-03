@@ -1,5 +1,6 @@
 import { airIssue, airVerify, getSubjectId } from "@/air/airkit";
 import { getIssuerId, getVerifierId } from "@/air/programs";
+import { trustService } from "./trustService";
 
 interface CredentialData {
   id: string;
@@ -139,6 +140,38 @@ export class CredentialService {
             )
           : 0,
     };
+  }
+
+  /**
+   * Get blockchain statistics (real data from smart contract)
+   */
+  async getBlockchainStatistics() {
+    try {
+      const stats = await trustService.getBlockchainStatistics();
+      return {
+        totalProofsOnChain: stats.totalProofs,
+        totalUsersOnChain: stats.totalUsers,
+        credentialTypeDistribution: Array.from(
+          stats.credentialTypes.entries()
+        ).map(([type, count]) => ({
+          type,
+          count,
+        })),
+        // Calculate some derived metrics
+        averageProofsPerUser:
+          stats.totalUsers > 0
+            ? (stats.totalProofs / stats.totalUsers).toFixed(2)
+            : "0",
+      };
+    } catch (error) {
+      console.error("Failed to fetch blockchain statistics:", error);
+      return {
+        totalProofsOnChain: 0,
+        totalUsersOnChain: 0,
+        credentialTypeDistribution: [],
+        averageProofsPerUser: "0",
+      };
+    }
   }
 }
 

@@ -146,6 +146,57 @@ class TrustService {
   }
 
   /**
+   * Get blockchain statistics by analyzing ProofRegistered events
+   * Returns aggregate data about the entire system
+   */
+  async getBlockchainStatistics(): Promise<{
+    totalProofs: number;
+    uniqueUsers: Set<string>;
+    credentialTypes: Map<string, number>;
+    totalUsers: number;
+  }> {
+    try {
+      // Query all ProofRegistered events from the contract
+      const filter = this.contract.filters.ProofRegistered();
+      const events = await this.contract.queryFilter(filter, 0, "latest");
+
+      const uniqueUsers = new Set<string>();
+      const credentialTypes = new Map<string, number>();
+
+      events.forEach((event: any) => {
+        const userAddress = event.args?.user;
+        const credentialType = event.args?.credentialType;
+
+        if (userAddress) {
+          uniqueUsers.add(userAddress.toLowerCase());
+        }
+
+        if (credentialType) {
+          credentialTypes.set(
+            credentialType,
+            (credentialTypes.get(credentialType) || 0) + 1
+          );
+        }
+      });
+
+      return {
+        totalProofs: events.length,
+        uniqueUsers,
+        credentialTypes,
+        totalUsers: uniqueUsers.size,
+      };
+    } catch (error) {
+      console.error("Failed to fetch blockchain statistics:", error);
+      return {
+        totalProofs: 0,
+        uniqueUsers: new Set(),
+        credentialTypes: new Map(),
+        totalUsers: 0,
+      };
+    }
+  }
+
+  /**
    * Listen for ProofRegistered events
    */
   onProofRegistered(
