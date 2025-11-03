@@ -136,17 +136,23 @@ export default function VerifyCredential() {
 
       setVerificationStep("");
 
-      // Check if error is because credential doesn't exist
+      // Check if error is USER_CANCELLED or NON_COMPLIANT (credential doesn't exist)
       if (
+        error.message?.includes("USER_CANCELLED") ||
+        error.message?.includes("NON_COMPLIANT") ||
         error.message?.includes("not found") ||
-        error.message?.includes("No credential")
+        error.message?.includes("No credential") ||
+        error.message?.includes("Missing ZKP")
       ) {
         setVerificationResult({
           success: false,
           credentialType: requiredCredential,
-          message: `Access denied. You don't have a valid ${requiredCredential} credential.`,
+          message: `You don't have a ${requiredCredential} credential yet. Please create one first in the Demos page.`,
         });
-        toast.error("Credential not found. Please issue one first.");
+        toast.error("Credential not found", {
+          description: "Go to Demos → DeFi Job Gate to create credentials",
+          duration: 5000,
+        });
       } else {
         toast.error(`Verification error: ${error.message}`);
         setVerificationResult({
@@ -195,6 +201,29 @@ export default function VerifyCredential() {
             </div>
           </Card>
         </motion.div>
+
+        {/* Info Card for Creating Credentials */}
+        <Card className="glass border-blue-500/30 bg-blue-500/10 p-4 mb-8 max-w-2xl mx-auto">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" />
+            <div className="text-left text-sm">
+              <p className="font-medium text-blue-400 mb-1">
+                📝 Don't have credentials yet?
+              </p>
+              <p className="text-blue-400/80">
+                Go to <strong>Demos → DeFi Job Gate</strong> to create KYC and
+                Work History credentials first. Then return here to verify them.
+              </p>
+              <Button
+                variant="link"
+                className="text-blue-400 hover:text-blue-300 p-0 h-auto mt-2"
+                onClick={() => navigate("/demos")}
+              >
+                Go to Demos →
+              </Button>
+            </div>
+          </div>
+        </Card>
 
         {/* Demo Cards */}
         <div className="grid md:grid-cols-3 gap-6 mb-12">
@@ -290,6 +319,15 @@ export default function VerifyCredential() {
                   <p className="text-muted-foreground mb-4">
                     {verificationResult.message}
                   </p>
+
+                  {!verificationResult.success && (
+                    <Button
+                      onClick={() => navigate("/demos")}
+                      className="bg-gradient-cosmic hover:shadow-glow"
+                    >
+                      Go to Demos to Create Credentials →
+                    </Button>
+                  )}
 
                   {verificationResult.success && verificationResult.details && (
                     <div className="space-y-2 p-3 rounded-lg bg-white/5 border border-white/10">
