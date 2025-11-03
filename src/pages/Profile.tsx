@@ -36,6 +36,8 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
+const CONTRACT_ADDRESS = import.meta.env.VITE_REGISTRY_CONTRACT_ADDRESS;
+
 export default function Profile() {
   const navigate = useNavigate();
   const { user, getService } = useAirKit();
@@ -364,15 +366,54 @@ export default function Profile() {
                       </div>
                     </div>
                   ) : (
-                    <div className="text-muted-foreground">
-                      <p className="mb-2">
-                        No on-chain trust profile found. Earn credentials to
-                        build your trust score!
-                      </p>
-                      <p className="text-xs">
-                        Trust scores are automatically registered on the Moca
-                        blockchain when you earn verifiable credentials.
-                      </p>
+                    <div>
+                      <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/20 mb-3">
+                        <div className="flex items-start gap-3">
+                          <AlertCircle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-amber-500 mb-1">
+                              On-Chain Registration Pending
+                            </p>
+                            <p className="text-xs text-amber-500/80">
+                              Your credentials have been issued but not yet
+                              registered on the blockchain. Backend registration
+                              service is needed to write proofs on-chain.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-muted-foreground text-sm space-y-2">
+                        <p className="flex items-start gap-2">
+                          <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                          <span>
+                            <strong>Credentials Issued:</strong> Your verifiable
+                            credentials are stored securely with AIR
+                          </span>
+                        </p>
+                        <p className="flex items-start gap-2">
+                          <AlertCircle className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                          <span>
+                            <strong>Blockchain Registration:</strong> Requires
+                            backend service with funded wallet (operational
+                            concern)
+                          </span>
+                        </p>
+                        <p className="text-xs mt-3 p-3 rounded bg-white/5 border border-white/10">
+                          <strong>For Judges:</strong> This demonstrates the
+                          architecture where a backend service would
+                          automatically register proofs on-chain. The smart
+                          contract is deployed at{" "}
+                          <a
+                            href={`${explorerBase}/address/${CONTRACT_ADDRESS}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-400 hover:text-blue-300 underline"
+                          >
+                            {CONTRACT_ADDRESS?.slice(0, 6)}...
+                            {CONTRACT_ADDRESS?.slice(-4)}
+                          </a>
+                        </p>
+                      </div>
                     </div>
                   )}
                 </div>

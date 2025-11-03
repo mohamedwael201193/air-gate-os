@@ -1,11 +1,11 @@
-import { useState } from 'react';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Slider } from '@/components/ui/slider';
-import { Shield, Lock, Eye, Calculator, Download } from 'lucide-react';
-import { motion } from 'framer-motion';
-import { toast } from 'sonner';
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Slider } from "@/components/ui/slider";
+import { motion } from "framer-motion";
+import { Calculator, Download, Eye, Lock, Shield } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 
 export default function Innovation() {
   const [privacyScore, setPrivacyScore] = useState(85);
@@ -15,7 +15,7 @@ export default function Innovation() {
   const traditionalCost = kycCost * volumePerMonth;
   const airgateCost = 0.01 * volumePerMonth;
   const savings = traditionalCost - airgateCost;
-  const savingsPercent = Math.round(((savings / traditionalCost) * 100));
+  const savingsPercent = Math.round((savings / traditionalCost) * 100);
 
   return (
     <div className="min-h-screen pt-20 pb-12">
@@ -30,8 +30,28 @@ export default function Innovation() {
             <span className="gradient-text">Innovation Showcase</span>
           </h1>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Explore cutting-edge features that set AirGate OS apart from traditional verification systems
+            Explore cutting-edge features that set AirGate OS apart from
+            traditional verification systems
           </p>
+
+          {/* Concept Demo Notice */}
+          <div className="mt-6 max-w-2xl mx-auto">
+            <Card className="glass border-blue-500/30 bg-blue-500/10 p-4">
+              <p className="text-sm text-blue-300">
+                💡 <strong>Concept Demonstrations:</strong> These features
+                showcase our vision for advanced privacy tools. For live
+                functionality, visit the{" "}
+                <a href="/demos" className="underline hover:text-blue-200">
+                  Demos
+                </a>{" "}
+                or{" "}
+                <a href="/profile" className="underline hover:text-blue-200">
+                  Profile
+                </a>{" "}
+                pages.
+              </p>
+            </Card>
+          </div>
         </motion.div>
 
         {/* Visual Rule Composer */}
@@ -47,8 +67,8 @@ export default function Innovation() {
           </h2>
           <Card className="glass border-white/10 p-8 bg-gradient-to-br from-purple-500/10 to-pink-500/10">
             <p className="text-muted-foreground mb-6">
-              Create complex verification rules with an intuitive drag-and-drop interface.
-              No coding required!
+              Create complex verification rules with an intuitive drag-and-drop
+              interface. No coding required!
             </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               <RuleBlock
@@ -72,7 +92,7 @@ export default function Innovation() {
             </div>
             <div className="flex gap-4">
               <Button
-                onClick={() => toast.success('Rule exported successfully!')}
+                onClick={() => toast.success("Rule exported successfully!")}
                 className="bg-gradient-cosmic hover:shadow-glow"
               >
                 <Download className="h-4 w-4 mr-2" />
@@ -80,7 +100,7 @@ export default function Innovation() {
               </Button>
               <Button
                 variant="outline"
-                onClick={() => toast.info('Smart contract code copied!')}
+                onClick={() => toast.info("Smart contract code copied!")}
                 className="border-white/20"
               >
                 Generate Smart Contract
@@ -102,41 +122,55 @@ export default function Innovation() {
           </h2>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card className="glass border-white/10 p-8">
-              <h3 className="text-xl font-semibold mb-4">Zero-Knowledge Proof Visualization</h3>
+              <h3 className="text-xl font-semibold mb-4">
+                Zero-Knowledge Proof Visualization
+              </h3>
               <div className="space-y-6">
                 <div>
                   <div className="flex justify-between mb-2">
-                    <span className="text-sm text-muted-foreground">Data Minimization</span>
-                    <span className="text-sm font-semibold text-accent">95%</span>
+                    <span className="text-sm text-muted-foreground">
+                      Data Minimization
+                    </span>
+                    <span className="text-sm font-semibold text-accent">
+                      95%
+                    </span>
                   </div>
                   <div className="h-2 bg-black/20 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-gradient-to-r from-accent to-primary rounded-full"
-                      style={{ width: '95%' }}
+                      style={{ width: "95%" }}
                     />
                   </div>
                 </div>
                 <div>
                   <div className="flex justify-between mb-2">
-                    <span className="text-sm text-muted-foreground">Privacy Preservation</span>
-                    <span className="text-sm font-semibold text-accent">98%</span>
+                    <span className="text-sm text-muted-foreground">
+                      Privacy Preservation
+                    </span>
+                    <span className="text-sm font-semibold text-accent">
+                      98%
+                    </span>
                   </div>
                   <div className="h-2 bg-black/20 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-gradient-to-r from-accent to-primary rounded-full"
-                      style={{ width: '98%' }}
+                      style={{ width: "98%" }}
                     />
                   </div>
                 </div>
                 <div>
                   <div className="flex justify-between mb-2">
-                    <span className="text-sm text-muted-foreground">Verification Confidence</span>
-                    <span className="text-sm font-semibold text-accent">100%</span>
+                    <span className="text-sm text-muted-foreground">
+                      Verification Confidence
+                    </span>
+                    <span className="text-sm font-semibold text-accent">
+                      100%
+                    </span>
                   </div>
                   <div className="h-2 bg-black/20 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-gradient-to-r from-accent to-primary rounded-full"
-                      style={{ width: '100%' }}
+                      style={{ width: "100%" }}
                     />
                   </div>
                 </div>
@@ -144,7 +178,9 @@ export default function Innovation() {
             </Card>
 
             <Card className="glass border-white/10 p-8 bg-gradient-to-br from-green-500/10 to-emerald-500/10">
-              <h3 className="text-xl font-semibold mb-4">Privacy Score Calculator</h3>
+              <h3 className="text-xl font-semibold mb-4">
+                Privacy Score Calculator
+              </h3>
               <div className="mb-6">
                 <label className="text-sm text-muted-foreground mb-2 block">
                   Adjust Privacy Settings
@@ -163,13 +199,24 @@ export default function Innovation() {
                 </div>
               </div>
               <div className="text-center p-6 rounded-lg bg-black/20">
-                <div className="text-5xl font-bold gradient-text mb-2">{privacyScore}</div>
-                <div className="text-sm text-muted-foreground">Privacy Score</div>
+                <div className="text-5xl font-bold gradient-text mb-2">
+                  {privacyScore}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Privacy Score
+                </div>
               </div>
               <div className="mt-4 space-y-2 text-sm">
                 <div className="flex items-center gap-2">
                   <Lock className="h-4 w-4 text-accent" />
-                  <span>{privacyScore > 80 ? 'Maximum' : privacyScore > 50 ? 'Enhanced' : 'Basic'} data protection</span>
+                  <span>
+                    {privacyScore > 80
+                      ? "Maximum"
+                      : privacyScore > 50
+                      ? "Enhanced"
+                      : "Basic"}{" "}
+                    data protection
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Shield className="h-4 w-4 text-accent" />
@@ -221,31 +268,41 @@ export default function Innovation() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
               <div className="p-6 rounded-lg bg-black/20 text-center">
-                <div className="text-sm text-muted-foreground mb-2">Traditional Cost</div>
+                <div className="text-sm text-muted-foreground mb-2">
+                  Traditional Cost
+                </div>
                 <div className="text-3xl font-bold text-destructive">
                   ${traditionalCost.toLocaleString()}
                 </div>
-                <div className="text-xs text-muted-foreground mt-1">per month</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  per month
+                </div>
               </div>
               <div className="p-6 rounded-lg bg-black/20 text-center">
-                <div className="text-sm text-muted-foreground mb-2">AirGate Cost</div>
+                <div className="text-sm text-muted-foreground mb-2">
+                  AirGate Cost
+                </div>
                 <div className="text-3xl font-bold text-accent">
                   ${airgateCost.toLocaleString()}
                 </div>
-                <div className="text-xs text-muted-foreground mt-1">per month</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  per month
+                </div>
               </div>
               <div className="p-6 rounded-lg bg-gradient-cosmic text-center">
                 <div className="text-sm text-white/80 mb-2">Your Savings</div>
                 <div className="text-3xl font-bold text-white">
                   ${savings.toLocaleString()}
                 </div>
-                <div className="text-xs text-white/80 mt-1">{savingsPercent}% reduction</div>
+                <div className="text-xs text-white/80 mt-1">
+                  {savingsPercent}% reduction
+                </div>
               </div>
             </div>
 
             <div className="flex gap-4">
               <Button
-                onClick={() => toast.success('Report downloaded!')}
+                onClick={() => toast.success("Report downloaded!")}
                 className="bg-gradient-cosmic hover:shadow-glow"
               >
                 <Download className="h-4 w-4 mr-2" />
@@ -253,7 +310,7 @@ export default function Innovation() {
               </Button>
               <Button
                 variant="outline"
-                onClick={() => toast.info('Presentation exported!')}
+                onClick={() => toast.info("Presentation exported!")}
                 className="border-white/20"
               >
                 Export for Stakeholders
@@ -278,9 +335,9 @@ function RuleBlock({
   content: string;
 }) {
   const colorClasses = {
-    blue: 'from-blue-500/20 to-cyan-500/20 border-blue-500/30',
-    purple: 'from-purple-500/20 to-pink-500/20 border-purple-500/30',
-    green: 'from-green-500/20 to-emerald-500/20 border-green-500/30',
+    blue: "from-blue-500/20 to-cyan-500/20 border-blue-500/30",
+    purple: "from-purple-500/20 to-pink-500/20 border-purple-500/30",
+    green: "from-green-500/20 to-emerald-500/20 border-green-500/30",
   };
 
   return (
