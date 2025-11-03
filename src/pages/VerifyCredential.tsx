@@ -18,6 +18,7 @@ export default function VerifyCredential() {
   const navigate = useNavigate();
   const { user } = useAirKit();
   const [isVerifying, setIsVerifying] = useState(false);
+  const [verificationStep, setVerificationStep] = useState<string>("");
   const [verificationResult, setVerificationResult] = useState<{
     success: boolean;
     credentialType: string;
@@ -63,10 +64,18 @@ export default function VerifyCredential() {
     setSelectedDemo(demoId);
     setIsVerifying(true);
     setVerificationResult(null);
+    setVerificationStep("Opening AIR wallet...");
+
+    // Show informative toast about process
+    toast.info("Opening AIR wallet for verification...", {
+      description: "This may take 30-60 seconds for blockchain confirmation",
+      duration: 5000,
+    });
 
     try {
       console.log("🔍 Verifying credential:", requiredCredential);
 
+      setVerificationStep("Loading programs...");
       // Get the verifier program ID for this credential type
       const verifierProgramIds = JSON.parse(
         import.meta.env.VITE_VERIFIER_PROGRAM_IDS || "{}"
@@ -87,6 +96,7 @@ export default function VerifyCredential() {
 
       console.log("🔍 Using verifier program:", verifierProgramId);
 
+      setVerificationStep("Generating proof...");
       // Request verification from AIR - this opens AIR wallet to verify credential
       // This VERIFIES existing credential, not issues a new one
       const verifyResult = await airVerify(
@@ -95,6 +105,10 @@ export default function VerifyCredential() {
       );
 
       console.log("📥 Verification result:", verifyResult);
+
+      setVerificationStep("Confirming on blockchain...");
+      // Give blockchain time to confirm (simulated wait)
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
       // AIR Kit returns the verified credential if it exists
       if (verifyResult) {
@@ -120,6 +134,8 @@ export default function VerifyCredential() {
     } catch (error: any) {
       console.error("❌ Verification failed:", error);
 
+      setVerificationStep("");
+
       // Check if error is because credential doesn't exist
       if (
         error.message?.includes("not found") ||
@@ -141,6 +157,7 @@ export default function VerifyCredential() {
       }
     } finally {
       setIsVerifying(false);
+      setVerificationStep("");
     }
   };
 
@@ -214,9 +231,14 @@ export default function VerifyCredential() {
                   disabled={isVerifying && selectedDemo === demo.id}
                   className="w-full bg-gradient-cosmic hover:shadow-glow"
                 >
-                  {isVerifying && selectedDemo === demo.id
-                    ? "Verifying..."
-                    : "Verify Access"}
+                  {isVerifying && selectedDemo === demo.id ? (
+                    <span className="flex items-center gap-2">
+                      <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      {verificationStep || "Verifying..."}
+                    </span>
+                  ) : (
+                    "Verify Access"
+                  )}
                 </Button>
               </Card>
             </motion.div>
