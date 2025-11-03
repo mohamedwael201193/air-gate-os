@@ -6,6 +6,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Navigation } from "./components/Navigation";
 import Auth from "./pages/Auth";
 import CollateralCalculator from "./pages/CollateralCalculator";
+import DAOVoting from "./pages/DAOVoting";
 import Demos from "./pages/Demos";
 import Docs from "./pages/Docs";
 import Home from "./pages/Home";
@@ -34,6 +35,7 @@ const App = () => (
             path="/collateral-calculator"
             element={<CollateralCalculator />}
           />
+          <Route path="/dao-voting" element={<DAOVoting />} />
           <Route path="/innovation" element={<Innovation />} />
           <Route path="/docs" element={<Docs />} />
           <Route path="/verify/:address" element={<VerifyPublic />} />

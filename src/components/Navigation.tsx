@@ -50,6 +50,9 @@ export function Navigation() {
             >
               Calculator
             </NavLink>
+            <NavLink to="/dao-voting" active={isActive("/dao-voting")}>
+              Voting
+            </NavLink>
             <NavLink to="/innovation" active={isActive("/innovation")}>
               Innovation
             </NavLink>
