@@ -1,14 +1,20 @@
 import { VerifyModal } from "@/components/airgate/VerifyModal";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAirKit } from "@/store/useAirKit";
 import { motion } from "framer-motion";
 import {
   Briefcase,
+  Calculator,
   CheckCircle2,
-  Loader2,
+  DollarSign,
+  Lock,
+  ShieldCheck,
   Star,
   TrendingUp,
+  Users,
+  Vote,
 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -20,39 +26,101 @@ interface DemoScenario {
   description: string;
   icon: React.ReactNode;
   requirements: string[];
-  demoKey: "defiJob" | "fanVip" | "traderTier";
+  demoKey?: "defiJob" | "fanVip" | "traderTier";
   color: string;
+  category: "defi" | "governance" | "access" | "tools";
+  isExternal?: boolean;
+  externalPath?: string;
 }
 
-const scenarios: DemoScenario[] = [
+const allDemos: DemoScenario[] = [
+  // DeFi Use Cases
+  {
+    id: "collateral-calculator",
+    title: "DeFi Collateral Calculator",
+    description:
+      "See how verified credentials reduce your collateral requirements by up to 67%. Real-time savings calculator.",
+    icon: <DollarSign className="h-6 w-6" />,
+    requirements: ["KYC Basic (+50 points)", "Work History (+25 points)"],
+    color: "from-blue-500/20 to-cyan-500/20",
+    category: "defi",
+    isExternal: true,
+    externalPath: "/collateral-calculator",
+  },
   {
     id: "defi-job",
-    title: "DeFi Job Verification",
+    title: "DeFi Job Access Gate",
     description:
-      "Verify credentials to access exclusive DeFi job opportunities",
+      "Verify credentials to access exclusive DeFi job opportunities and professional networks.",
     icon: <Briefcase className="h-6 w-6" />,
     requirements: ["KYC Basic Verification", "Work History Credential"],
     demoKey: "defiJob",
-    color: "from-blue-500/20 to-cyan-500/20",
-  },
-  {
-    id: "fan-vip",
-    title: "Fan VIP Access",
-    description: "Prove fan status to unlock VIP content and experiences",
-    icon: <Star className="h-6 w-6" />,
-    requirements: ["Fan Badge Credential"],
-    demoKey: "fanVip",
-    color: "from-amber-500/20 to-orange-500/20",
+    color: "from-purple-500/20 to-pink-500/20",
+    category: "defi",
   },
   {
     id: "trader-tier",
     title: "Trader Tier Verification",
     description:
-      "Access advanced trading features based on verified experience",
+      "Access advanced trading features and lower fees based on verified trading history.",
     icon: <TrendingUp className="h-6 w-6" />,
     requirements: ["KYC Basic Verification", "Trading History"],
     demoKey: "traderTier",
     color: "from-green-500/20 to-emerald-500/20",
+    category: "defi",
+  },
+
+  // DAO & Governance
+  {
+    id: "dao-voting",
+    title: "Trust-Weighted DAO Voting",
+    description:
+      "Vote on proposals with power proportional to your trust score. Sybil-resistant governance.",
+    icon: <Vote className="h-6 w-6" />,
+    requirements: ["Any verified credentials", "Trust Score determines power"],
+    color: "from-purple-500/20 to-pink-500/20",
+    category: "governance",
+    isExternal: true,
+    externalPath: "/dao-voting",
+  },
+
+  // Access Control
+  {
+    id: "verify-credential",
+    title: "Credential Verification Demo",
+    description:
+      "Real verification scenarios: Premium Access, Loan Application, Professional Network. See verification in action.",
+    icon: <ShieldCheck className="h-6 w-6" />,
+    requirements: ["Various credentials for different scenarios"],
+    color: "from-blue-500/20 to-cyan-500/20",
+    category: "access",
+    isExternal: true,
+    externalPath: "/verify-credential",
+  },
+  {
+    id: "fan-vip",
+    title: "Fan VIP Access",
+    description:
+      "Prove fan status to unlock exclusive VIP content, events, and community access.",
+    icon: <Star className="h-6 w-6" />,
+    requirements: ["Fan Badge Credential"],
+    demoKey: "fanVip",
+    color: "from-amber-500/20 to-orange-500/20",
+    category: "access",
+  },
+
+  // Tools & Calculators
+  {
+    id: "trust-score-calculator",
+    title: "Trust Score Calculator",
+    description:
+      "Interactive planner showing what credentials you need for better rates, voting power, and access.",
+    icon: <Calculator className="h-6 w-6" />,
+    requirements: ["No login required - planning tool"],
+    color: "from-purple-500/20 to-pink-500/20",
+    category: "tools",
+    isExternal: true,
+    externalPath: "/trust-score-calculator",
   },
 ];
 
@@ -60,14 +128,25 @@ export default function Demos() {
   const navigate = useNavigate();
   const { user } = useAirKit();
   const [selectedDemo, setSelectedDemo] = useState<DemoScenario | null>(null);
+  const [activeTab, setActiveTab] = useState("all");
 
-  const handleVerify = (scenario: DemoScenario) => {
+  const handleDemoClick = (demo: DemoScenario) => {
+    if (demo.isExternal && demo.externalPath) {
+      navigate(demo.externalPath);
+      return;
+    }
+
     if (!user) {
       toast.error("Please connect your AIR identity first");
       navigate("/auth");
       return;
     }
-    setSelectedDemo(scenario);
+    setSelectedDemo(demo);
+  };
+
+  const getFilteredDemos = (category: string) => {
+    if (category === "all") return allDemos;
+    return allDemos.filter((demo) => demo.category === category);
   };
 
   return (
@@ -80,73 +159,12 @@ export default function Demos() {
           className="mb-12 text-center"
         >
           <h1 className="text-4xl font-bold mb-4">
-            <span className="gradient-text">Live Verification Demos</span>
+            <span className="gradient-text">Use Case Showcase</span>
           </h1>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Experience real-world verification scenarios powered by
-            zero-knowledge proofs. Each demo showcases credential issuance and
-            verification flows.
+            Explore real-world applications of verifiable credentials across
+            DeFi, governance, access control, and more.
           </p>
-        </motion.div>
-
-        {/* Featured Tools */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-4"
-        >
-          <Card
-            className="glass border-purple-500/30 bg-gradient-to-br from-purple-500/10 to-pink-500/10 p-6 hover:shadow-glow transition-all cursor-pointer"
-            onClick={() => navigate("/trust-score-calculator")}
-          >
-            <div className="flex items-start gap-4">
-              <div className="p-3 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500">
-                <CheckCircle2 className="h-6 w-6" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-semibold mb-2">
-                  🧮 Trust Score Calculator
-                </h3>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Plan your strategy! See what credentials you need for better
-                  DeFi rates, voting power, and access levels.
-                </p>
-                <Button
-                  size="sm"
-                  className="bg-gradient-cosmic hover:shadow-glow"
-                >
-                  Try Calculator
-                </Button>
-              </div>
-            </div>
-          </Card>
-
-          <Card
-            className="glass border-blue-500/30 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 p-6 hover:shadow-glow transition-all cursor-pointer"
-            onClick={() => navigate("/collateral-calculator")}
-          >
-            <div className="flex items-start gap-4">
-              <div className="p-3 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500">
-                <TrendingUp className="h-6 w-6" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-semibold mb-2">
-                  💰 DeFi Collateral Calculator
-                </h3>
-                <p className="text-sm text-muted-foreground mb-3">
-                  See your savings! Calculate how much less collateral you need
-                  with verified credentials.
-                </p>
-                <Button
-                  size="sm"
-                  className="bg-gradient-cosmic hover:shadow-glow"
-                >
-                  Calculate Savings
-                </Button>
-              </div>
-            </div>
-          </Card>
         </motion.div>
 
         {/* Info Card */}
@@ -167,8 +185,8 @@ export default function Demos() {
                     Connect Your AIR Identity
                   </h3>
                   <p className="text-sm text-amber-500/80 mb-3">
-                    You need to connect your AIR identity to try these
-                    verification demos
+                    Connect to unlock interactive demos and verification
+                    features
                   </p>
                   <Button
                     onClick={() => navigate("/auth")}
@@ -183,22 +201,74 @@ export default function Demos() {
           </motion.div>
         )}
 
-        {/* Demo Scenarios */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {scenarios.map((scenario, index) => (
-            <DemoCard
-              key={scenario.id}
-              scenario={scenario}
-              onVerify={() => handleVerify(scenario)}
-              isVerifying={false} // No loading state needed with modal
-              disabled={!user}
-              delay={0.1 + index * 0.1}
-            />
-          ))}
-        </div>
+        {/* Category Tabs */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
+            <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 gap-2 mb-8 glass p-2 h-auto">
+              <TabsTrigger value="all" className="flex items-center gap-2 py-3">
+                <CheckCircle2 className="h-4 w-4" />
+                <span className="hidden sm:inline">All Demos</span>
+                <span className="sm:hidden">All</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="defi"
+                className="flex items-center gap-2 py-3"
+              >
+                <DollarSign className="h-4 w-4" />
+                DeFi
+              </TabsTrigger>
+              <TabsTrigger
+                value="governance"
+                className="flex items-center gap-2 py-3"
+              >
+                <Users className="h-4 w-4" />
+                <span className="hidden sm:inline">Governance</span>
+                <span className="sm:hidden">DAO</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="access"
+                className="flex items-center gap-2 py-3"
+              >
+                <Lock className="h-4 w-4" />
+                <span className="hidden sm:inline">Access</span>
+                <span className="sm:hidden">Access</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="tools"
+                className="flex items-center gap-2 py-3"
+              >
+                <Calculator className="h-4 w-4" />
+                Tools
+              </TabsTrigger>
+            </TabsList>
+
+            {/* All Categories */}
+            {["all", "defi", "governance", "access", "tools"].map(
+              (category) => (
+                <TabsContent key={category} value={category}>
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {getFilteredDemos(category).map((demo, index) => (
+                      <DemoCard
+                        key={demo.id}
+                        scenario={demo}
+                        onClick={() => handleDemoClick(demo)}
+                        disabled={!user && !demo.isExternal}
+                        delay={0.1 + index * 0.05}
+                      />
+                    ))}
+                  </div>
+                </TabsContent>
+              )
+            )}
+          </Tabs>
+        </motion.div>
 
         {/* VerifyModal */}
-        {selectedDemo && (
+        {selectedDemo && selectedDemo.demoKey && (
           <VerifyModal
             isOpen={true}
             onClose={() => setSelectedDemo(null)}
@@ -248,14 +318,12 @@ export default function Demos() {
 
 function DemoCard({
   scenario,
-  onVerify,
-  isVerifying,
+  onClick,
   disabled,
   delay,
 }: {
   scenario: DemoScenario;
-  onVerify: () => void;
-  isVerifying: boolean;
+  onClick: () => void;
   disabled: boolean;
   delay: number;
 }) {
@@ -264,47 +332,58 @@ function DemoCard({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay }}
+      className="h-full"
     >
       <Card
-        className={`glass border-white/10 p-6 h-full flex flex-col bg-gradient-to-br ${scenario.color} hover:shadow-glow transition-all`}
+        className={`glass border-white/10 p-6 h-full flex flex-col transition-all ${
+          !disabled || scenario.isExternal
+            ? "hover:shadow-glow hover:border-accent/50 cursor-pointer hover:-translate-y-1"
+            : "opacity-60"
+        }`}
+        onClick={disabled && !scenario.isExternal ? undefined : onClick}
       >
-        <div className="mb-4">
-          <div className="w-12 h-12 rounded-full bg-gradient-cosmic flex items-center justify-center mb-4">
+        {/* Icon and Badge */}
+        <div className="flex items-start justify-between mb-4">
+          <div
+            className={`p-4 rounded-xl bg-gradient-to-br ${scenario.color} shadow-lg`}
+          >
             {scenario.icon}
           </div>
-          <h3 className="text-xl font-semibold mb-2">{scenario.title}</h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            {scenario.description}
-          </p>
-        </div>
-
-        <div className="mb-4 flex-1">
-          <p className="text-xs font-medium text-muted-foreground mb-2">
-            Required Credentials:
-          </p>
-          <div className="space-y-1">
-            {scenario.requirements.map((req) => (
-              <div key={req} className="flex items-center gap-2 text-sm">
-                <CheckCircle2 className="h-3 w-3 text-accent flex-shrink-0" />
-                <span>{req}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <Button
-          onClick={onVerify}
-          disabled={disabled || isVerifying}
-          className="w-full bg-gradient-cosmic hover:shadow-glow"
-        >
-          {isVerifying ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Verifying...
-            </>
-          ) : (
-            "Start Verification"
+          {scenario.isExternal && (
+            <span className="text-xs px-3 py-1 rounded-full bg-gradient-cosmic font-medium">
+              Interactive Demo
+            </span>
           )}
+        </div>
+
+        {/* Title */}
+        <h3 className="font-bold text-xl mb-2">{scenario.title}</h3>
+
+        {/* Description */}
+        <p className="text-sm text-muted-foreground mb-4 flex-grow">
+          {scenario.description}
+        </p>
+
+        {/* Requirements */}
+        <div className="space-y-2 mb-6 p-3 rounded-lg bg-black/20">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            Requirements
+          </p>
+          {scenario.requirements.map((req, i) => (
+            <div key={i} className="flex items-start gap-2 text-sm">
+              <CheckCircle2 className="h-4 w-4 text-accent flex-shrink-0 mt-0.5" />
+              <span>{req}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Action Button */}
+        <Button
+          className="w-full bg-gradient-cosmic hover:shadow-glow font-semibold"
+          disabled={disabled && !scenario.isExternal}
+          size="lg"
+        >
+          {scenario.isExternal ? "Launch Demo →" : "Start Verification →"}
         </Button>
       </Card>
     </motion.div>
