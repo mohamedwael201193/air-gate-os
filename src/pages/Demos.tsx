@@ -1,18 +1,18 @@
-import { VerifyModal } from '@/components/airgate/VerifyModal';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { useAirKit } from '@/store/useAirKit';
-import { motion } from 'framer-motion';
+import { VerifyModal } from "@/components/airgate/VerifyModal";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { useAirKit } from "@/store/useAirKit";
+import { motion } from "framer-motion";
 import {
   Briefcase,
   CheckCircle2,
   Loader2,
   Star,
-  TrendingUp
-} from 'lucide-react';
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
+  TrendingUp,
+} from "lucide-react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 interface DemoScenario {
   id: string;
@@ -26,31 +26,33 @@ interface DemoScenario {
 
 const scenarios: DemoScenario[] = [
   {
-    id: 'defi-job',
-    title: 'DeFi Job Verification',
-    description: 'Verify credentials to access exclusive DeFi job opportunities',
+    id: "defi-job",
+    title: "DeFi Job Verification",
+    description:
+      "Verify credentials to access exclusive DeFi job opportunities",
     icon: <Briefcase className="h-6 w-6" />,
-    requirements: ['KYC Basic Verification', 'Work History Credential'],
-    demoKey: 'defiJob',
-    color: 'from-blue-500/20 to-cyan-500/20',
+    requirements: ["KYC Basic Verification", "Work History Credential"],
+    demoKey: "defiJob",
+    color: "from-blue-500/20 to-cyan-500/20",
   },
   {
-    id: 'fan-vip',
-    title: 'Fan VIP Access',
-    description: 'Prove fan status to unlock VIP content and experiences',
+    id: "fan-vip",
+    title: "Fan VIP Access",
+    description: "Prove fan status to unlock VIP content and experiences",
     icon: <Star className="h-6 w-6" />,
-    requirements: ['Fan Badge Credential'],
-    demoKey: 'fanVip',
-    color: 'from-amber-500/20 to-orange-500/20',
+    requirements: ["Fan Badge Credential"],
+    demoKey: "fanVip",
+    color: "from-amber-500/20 to-orange-500/20",
   },
   {
-    id: 'trader-tier',
-    title: 'Trader Tier Verification',
-    description: 'Access advanced trading features based on verified experience',
+    id: "trader-tier",
+    title: "Trader Tier Verification",
+    description:
+      "Access advanced trading features based on verified experience",
     icon: <TrendingUp className="h-6 w-6" />,
-    requirements: ['KYC Basic Verification', 'Trading History'],
-    demoKey: 'traderTier',
-    color: 'from-green-500/20 to-emerald-500/20',
+    requirements: ["KYC Basic Verification", "Trading History"],
+    demoKey: "traderTier",
+    color: "from-green-500/20 to-emerald-500/20",
   },
 ];
 
@@ -61,8 +63,8 @@ export default function Demos() {
 
   const handleVerify = (scenario: DemoScenario) => {
     if (!user) {
-      toast.error('Please connect your AIR identity first');
-      navigate('/auth');
+      toast.error("Please connect your AIR identity first");
+      navigate("/auth");
       return;
     }
     setSelectedDemo(scenario);
@@ -81,9 +83,70 @@ export default function Demos() {
             <span className="gradient-text">Live Verification Demos</span>
           </h1>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Experience real-world verification scenarios powered by zero-knowledge proofs.
-            Each demo showcases credential issuance and verification flows.
+            Experience real-world verification scenarios powered by
+            zero-knowledge proofs. Each demo showcases credential issuance and
+            verification flows.
           </p>
+        </motion.div>
+
+        {/* Featured Tools */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-4"
+        >
+          <Card
+            className="glass border-purple-500/30 bg-gradient-to-br from-purple-500/10 to-pink-500/10 p-6 hover:shadow-glow transition-all cursor-pointer"
+            onClick={() => navigate("/trust-score-calculator")}
+          >
+            <div className="flex items-start gap-4">
+              <div className="p-3 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500">
+                <CheckCircle2 className="h-6 w-6" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold mb-2">
+                  🧮 Trust Score Calculator
+                </h3>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Plan your strategy! See what credentials you need for better
+                  DeFi rates, voting power, and access levels.
+                </p>
+                <Button
+                  size="sm"
+                  className="bg-gradient-cosmic hover:shadow-glow"
+                >
+                  Try Calculator
+                </Button>
+              </div>
+            </div>
+          </Card>
+
+          <Card
+            className="glass border-blue-500/30 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 p-6 hover:shadow-glow transition-all cursor-pointer"
+            onClick={() => navigate("/collateral-calculator")}
+          >
+            <div className="flex items-start gap-4">
+              <div className="p-3 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500">
+                <TrendingUp className="h-6 w-6" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold mb-2">
+                  💰 DeFi Collateral Calculator
+                </h3>
+                <p className="text-sm text-muted-foreground mb-3">
+                  See your savings! Calculate how much less collateral you need
+                  with verified credentials.
+                </p>
+                <Button
+                  size="sm"
+                  className="bg-gradient-cosmic hover:shadow-glow"
+                >
+                  Calculate Savings
+                </Button>
+              </div>
+            </div>
+          </Card>
         </motion.div>
 
         {/* Info Card */}
@@ -104,10 +167,11 @@ export default function Demos() {
                     Connect Your AIR Identity
                   </h3>
                   <p className="text-sm text-amber-500/80 mb-3">
-                    You need to connect your AIR identity to try these verification demos
+                    You need to connect your AIR identity to try these
+                    verification demos
                   </p>
                   <Button
-                    onClick={() => navigate('/auth')}
+                    onClick={() => navigate("/auth")}
                     size="sm"
                     className="bg-gradient-cosmic hover:shadow-glow"
                   >
@@ -209,7 +273,9 @@ function DemoCard({
             {scenario.icon}
           </div>
           <h3 className="text-xl font-semibold mb-2">{scenario.title}</h3>
-          <p className="text-sm text-muted-foreground mb-4">{scenario.description}</p>
+          <p className="text-sm text-muted-foreground mb-4">
+            {scenario.description}
+          </p>
         </div>
 
         <div className="mb-4 flex-1">
@@ -237,7 +303,7 @@ function DemoCard({
               Verifying...
             </>
           ) : (
-            'Start Verification'
+            "Start Verification"
           )}
         </Button>
       </Card>

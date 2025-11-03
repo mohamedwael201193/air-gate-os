@@ -13,6 +13,7 @@ import Home from "./pages/Home";
 import Innovation from "./pages/Innovation";
 import NotFound from "./pages/NotFound";
 import Profile from "./pages/Profile";
+import TrustScoreCalculator from "./pages/TrustScoreCalculator";
 import VerifyCredential from "./pages/VerifyCredential";
 import VerifyPublic from "./pages/VerifyPublic";
 
@@ -36,6 +37,10 @@ const App = () => (
             element={<CollateralCalculator />}
           />
           <Route path="/dao-voting" element={<DAOVoting />} />
+          <Route
+            path="/trust-score-calculator"
+            element={<TrustScoreCalculator />}
+          />
           <Route path="/innovation" element={<Innovation />} />
           <Route path="/docs" element={<Docs />} />
           <Route path="/verify/:address" element={<VerifyPublic />} />
