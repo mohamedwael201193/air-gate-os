@@ -11,6 +11,7 @@ import Home from "./pages/Home";
 import Innovation from "./pages/Innovation";
 import NotFound from "./pages/NotFound";
 import Profile from "./pages/Profile";
+import VerifyCredential from "./pages/VerifyCredential";
 import VerifyPublic from "./pages/VerifyPublic";
 
 const queryClient = new QueryClient();
@@ -27,6 +28,7 @@ const App = () => (
           <Route path="/auth" element={<Auth />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/demos" element={<Demos />} />
+          <Route path="/verify-credential" element={<VerifyCredential />} />
           <Route path="/innovation" element={<Innovation />} />
           <Route path="/docs" element={<Docs />} />
           <Route path="/verify/:address" element={<VerifyPublic />} />
