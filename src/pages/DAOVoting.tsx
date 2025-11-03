@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { governanceService, type Proposal } from "@/services/governanceService";
 import { trustService } from "@/services/trustService";
 import { useAirKit } from "@/store/useAirKit";
 import { motion } from "framer-motion";
@@ -18,105 +19,77 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
-interface Proposal {
-  id: number;
-  title: string;
-  description: string;
-  proposer: string;
-  status: "active" | "passed" | "rejected";
-  votesFor: number;
-  votesAgainst: number;
-  endTime: Date;
-  requiredScore: number;
-}
-
 export default function DAOVoting() {
   const navigate = useNavigate();
   const { user } = useAirKit();
   const [trustScore, setTrustScore] = useState<number>(0);
   const [votingPower, setVotingPower] = useState<number>(0);
   const [hasVoted, setHasVoted] = useState<{ [key: number]: boolean }>({});
+  const [proposals, setProposals] = useState<Proposal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-
-  const proposals: Proposal[] = [
-    {
-      id: 1,
-      title: "Increase Trust Score for Work History",
-      description:
-        "Proposal to increase the trust score bonus for verified work history credentials from 25 to 35 points to better incentivize professional verification.",
-      proposer: "0x742d...4a2c",
-      status: "active",
-      votesFor: 245,
-      votesAgainst: 89,
-      endTime: new Date(Date.now() + 86400000 * 2), // 2 days
-      requiredScore: 0,
-    },
-    {
-      id: 2,
-      title: "Add GitHub Verification as Credential Type",
-      description:
-        "Introduce GitHub account verification as a new credential type worth 20 trust score points. This would enable developer community participation.",
-      proposer: "0x8b3f...9d1e",
-      status: "active",
-      votesFor: 512,
-      votesAgainst: 143,
-      endTime: new Date(Date.now() + 86400000 * 5), // 5 days
-      requiredScore: 0,
-    },
-    {
-      id: 3,
-      title: "Implement Collateral Rate Governance",
-      description:
-        "Allow DAO to vote on adjusting DeFi collateral rates based on market conditions. This proposal grants governance control over the risk parameters.",
-      proposer: "0x1a7c...6f8b",
-      status: "active",
-      votesFor: 892,
-      votesAgainst: 201,
-      endTime: new Date(Date.now() + 86400000 * 7), // 7 days
-      requiredScore: 50,
-    },
-  ];
+  const [isContractDeployed, setIsContractDeployed] = useState(false);
 
   useEffect(() => {
-    const loadTrustData = async () => {
-      if (!user) {
-        setIsLoading(false);
-        return;
-      }
+    const loadData = async () => {
+      setIsLoading(true);
 
       try {
+        // Check if governance contract is deployed
+        const deployed = governanceService.isContractDeployed();
+        setIsContractDeployed(deployed);
+
+        // Load proposals from blockchain or localStorage
+        const fetchedProposals = await governanceService.getProposals();
+        setProposals(fetchedProposals);
+
+        if (!user) {
+          setIsLoading(false);
+          return;
+        }
+
         const address = user.abstractAccountAddress || user.wallet?.address;
         if (!address) {
           setIsLoading(false);
           return;
         }
 
+        // Load trust score from blockchain
         const profile = await trustService.getTrustProfile(address);
         if (profile) {
           setTrustScore(profile.trustScore);
-          // Voting power = trust score (max 100, min 1)
           setVotingPower(Math.max(1, Math.min(100, profile.trustScore)));
         }
+
+        // Check voting status for each proposal
+        const votingStatus: { [key: number]: boolean } = {};
+        for (const proposal of fetchedProposals) {
+          const voted = await governanceService.hasUserVoted(
+            proposal.id,
+            address
+          );
+          votingStatus[proposal.id] = voted;
+        }
+        setHasVoted(votingStatus);
       } catch (error) {
-        console.error("Failed to load trust profile:", error);
+        console.error("Failed to load governance data:", error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadTrustData();
-
-    // Load voting history from localStorage
-    const votingHistory = localStorage.getItem("dao_voting_history");
-    if (votingHistory) {
-      setHasVoted(JSON.parse(votingHistory));
-    }
+    loadData();
   }, [user]);
 
-  const handleVote = (proposalId: number, support: boolean) => {
+  const handleVote = async (proposalId: number, support: boolean) => {
     if (!user) {
       toast.error("Please login to vote");
       navigate("/auth");
+      return;
+    }
+
+    const address = user.abstractAccountAddress || user.wallet?.address;
+    if (!address) {
+      toast.error("No wallet address found");
       return;
     }
 
@@ -127,9 +100,9 @@ export default function DAOVoting() {
     }
 
     const proposal = proposals.find((p) => p.id === proposalId);
-    if (proposal && trustScore < proposal.requiredScore) {
+    if (proposal && trustScore < proposal.minTrustScore) {
       toast.error(
-        `This proposal requires a trust score of at least ${proposal.requiredScore}`
+        `This proposal requires a trust score of at least ${proposal.minTrustScore}`
       );
       return;
     }
@@ -139,17 +112,26 @@ export default function DAOVoting() {
       return;
     }
 
-    // Record vote
-    const newVotingHistory = { ...hasVoted, [proposalId]: true };
-    setHasVoted(newVotingHistory);
-    localStorage.setItem(
-      "dao_voting_history",
-      JSON.stringify(newVotingHistory)
-    );
+    try {
+      // Cast vote using governance service (blockchain or local)
+      await governanceService.vote(proposalId, support, address, votingPower);
 
-    toast.success(
-      `Vote recorded! Your voting power: ${votingPower} (based on trust score: ${trustScore})`
-    );
+      // Update local state
+      setHasVoted({ ...hasVoted, [proposalId]: true });
+
+      // Refresh proposals to show updated vote counts
+      const updatedProposals = await governanceService.getProposals();
+      setProposals(updatedProposals);
+
+      toast.success(
+        `Vote recorded! Your voting power: ${votingPower} ${
+          isContractDeployed ? "(on-chain)" : "(locally stored)"
+        }`
+      );
+    } catch (error: any) {
+      console.error("Vote failed:", error);
+      toast.error(`Failed to cast vote: ${error.message}`);
+    }
   };
 
   const getTimeRemaining = (endTime: Date) => {
@@ -247,9 +229,9 @@ export default function DAOVoting() {
                       <h3 className="text-xl font-semibold">
                         {proposal.title}
                       </h3>
-                      {proposal.requiredScore > 0 && (
+                      {proposal.minTrustScore > 0 && (
                         <span className="px-2 py-1 text-xs rounded-full bg-yellow-500/20 text-yellow-300 border border-yellow-500/30">
-                          Requires {proposal.requiredScore}+ Trust Score
+                          Requires {proposal.minTrustScore}+ Trust Score
                         </span>
                       )}
                     </div>
@@ -304,11 +286,11 @@ export default function DAOVoting() {
                         You Voted (Power: {votingPower})
                       </span>
                     </div>
-                  ) : trustScore < proposal.requiredScore ? (
+                  ) : trustScore < proposal.minTrustScore ? (
                     <div className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
                       <XCircle className="h-4 w-4 text-yellow-400" />
                       <span className="text-sm font-medium text-yellow-400">
-                        Requires {proposal.requiredScore}+ Trust Score
+                        Requires {proposal.minTrustScore}+ Trust Score
                       </span>
                     </div>
                   ) : (
