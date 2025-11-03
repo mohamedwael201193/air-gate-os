@@ -44,6 +44,12 @@ export function Navigation() {
             >
               Verify
             </NavLink>
+            <NavLink
+              to="/collateral-calculator"
+              active={isActive("/collateral-calculator")}
+            >
+              Calculator
+            </NavLink>
             <NavLink to="/innovation" active={isActive("/innovation")}>
               Innovation
             </NavLink>
