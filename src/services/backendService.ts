@@ -72,18 +72,11 @@ export async function registerProofOnChain(
 
 /**
  * Get recommended proof type based on credential type
+ * Note: Contract expects exact credential type names (KYC_BASIC, WORK_HISTORY, FAN_BADGE)
  */
 export function getProofType(credentialType: string): string {
-  const proofTypeMap: Record<string, string> = {
-    KYC_BASIC: "KYC",
-    WORK_HISTORY: "WORK_HISTORY",
-    FAN_BADGE: "COMMUNITY",
-    EDUCATION: "EDUCATION",
-    SKILL: "SKILL",
-    LICENSE: "PROFESSIONAL_LICENSE",
-  };
-
-  return proofTypeMap[credentialType] || "OTHER";
+  // Return credential type AS-IS - contract expects exact strings
+  return credentialType;
 }
 
 /**
