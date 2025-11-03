@@ -157,6 +157,13 @@ export function getUserProfile() {
     const userData = JSON.parse(stored);
     console.log("📋 getUserProfile - Raw userData:", userData);
 
+    // Try to decode JWT token to get additional claims
+    let tokenClaims: any = null;
+    if (userData.token) {
+      tokenClaims = decodeJWT(userData.token);
+      console.log("🔓 Decoded JWT claims:", tokenClaims);
+    }
+
     const emailAccount = userData.linkedAccounts?.find(
       (acc: any) => acc.type === "email"
     );
@@ -167,19 +174,22 @@ export function getUserProfile() {
       (acc: any) => acc.type === "custom_auth"
     );
 
-    // Extract email from multiple possible sources
+    // Extract email from multiple possible sources including JWT
     const email =
       userData.email ||
       userData.user?.email ||
+      tokenClaims?.email ||
       emailAccount?.address ||
       userData.linkedAccounts?.find((acc: any) => acc.email)?.email;
 
-    // Extract name from multiple possible sources
+    // Extract name from multiple possible sources including JWT
     let displayName =
       userData.name ||
       userData.user?.name ||
       userData.given_name ||
-      userData.user?.given_name;
+      userData.user?.given_name ||
+      tokenClaims?.name ||
+      tokenClaims?.given_name;
 
     // If no name but we have email, derive from email
     if (!displayName && email) {
@@ -193,7 +203,17 @@ export function getUserProfile() {
         .join(" ");
     }
 
-    // Fallback to "AIR User"
+    // If still no name, use wallet address
+    const walletAddr =
+      walletAccount?.address ||
+      userData.wallet?.address ||
+      userData.abstractAccountAddress;
+
+    if (!displayName && walletAddr) {
+      displayName = `${walletAddr.slice(0, 6)}...${walletAddr.slice(-4)}`;
+    }
+
+    // Final fallback
     if (!displayName) {
       displayName = "AIR User";
     }
@@ -206,13 +226,10 @@ export function getUserProfile() {
         userData.did ||
         userData.userDid ||
         userData.user?.id ||
+        tokenClaims?.sub ||
         "Not available",
-      account:
-        walletAccount?.address ||
-        userData.wallet?.address ||
-        userData.abstractAccountAddress ||
-        "Not connected",
-      customUserId: customAuth?.customUserId,
+      account: walletAddr || "Not connected",
+      customUserId: customAuth?.customUserId || tokenClaims?.partnerUserId,
       linkedAccounts: userData.linkedAccounts || [],
       raw: userData,
     };
