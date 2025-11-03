@@ -1,42 +1,29 @@
 import { ethers } from "ethers";
 
-// ProofOfWorkRegistry ABI (only the functions we need)
+// ProofOfWorkRegistry ABI - matches the deployed contract
 const REGISTRY_ABI = [
-  "function registerProof(address userAddress, string proofType, string credentialId, string issuer) external",
-  "function endorseProfile(address profileOwner) external",
-  "function getTrustProfile(address userAddress) external view returns (uint256 trustScore, string[] memory proofTypes, uint256 endorsementCount, uint256 lastActivityTimestamp)",
-  "function hasProof(address userAddress, string proofType) external view returns (bool)",
-  "function getProofDetails(address userAddress, string proofType) external view returns (string credentialId, string issuer, uint256 timestamp)",
-  "function getProofTypeWeight(string proofType) external view returns (uint256)",
-  "event ProofRegistered(address indexed userAddress, string proofType, string credentialId, uint256 timestamp)",
-  "event ProfileEndorsed(address indexed profileOwner, address indexed endorser, uint256 newEndorsementCount)",
+  "function registerProof(address userAddress, string credentialType, string credentialId, string metadata) external returns (uint256)",
+  "function profiles(address) external view returns (uint256 proofCount, uint256 firstProofTimestamp, bool hasKYC, uint256 workHistoryCount, bool hasFanBadge, uint256 trustScore, uint256 lastUpdated)",
+  "function getUserProofIds(address userAddress) external view returns (uint256[] memory)",
+  "function getProof(address userAddress, uint256 proofId) external view returns (string memory credentialType, string memory credentialId, string memory metadata, uint256 timestamp, bool isActive)",
+  "function hasCredentialType(address userAddress, string credentialType) external view returns (bool)",
+  "event ProofRegistered(address indexed user, uint256 indexed proofId, string credentialType, string credentialId, uint256 timestamp)",
+  "event TrustScoreUpdated(address indexed user, uint256 newScore, uint256 timestamp)",
 ] as const;
 
 const CONTRACT_ADDRESS = import.meta.env.VITE_REGISTRY_CONTRACT_ADDRESS;
 const RPC_URL =
   import.meta.env.VITE_MOCA_RPC_URL || "https://devnet-rpc.mocachain.org";
 
-// Proof type mappings from credential types to contract proof types
-export const PROOF_TYPE_MAP: Record<string, string> = {
-  KYC_BASIC: "KYC",
-  WORK_HISTORY: "WORK_HISTORY",
-  FAN_BADGE: "COMMUNITY",
-  EDUCATION: "EDUCATION",
-  SKILL: "SKILL",
-  LICENSE: "PROFESSIONAL_LICENSE",
-};
-
 export interface TrustProfile {
   trustScore: number;
+  proofCount: number;
   proofTypes: string[];
   endorsementCount: number;
   lastActivityTimestamp: number;
-}
-
-export interface ProofDetails {
-  credentialId: string;
-  issuer: string;
-  timestamp: number;
+  hasKYC: boolean;
+  workHistoryCount: number;
+  hasFanBadge: boolean;
 }
 
 /**
@@ -57,38 +44,60 @@ class TrustService {
 
   /**
    * Get trust profile for an address
-   * Returns null if profile doesn't exist (not an error)
+   * Returns null if profile doesn't exist (proofCount = 0)
    */
   async getTrustProfile(address: string): Promise<TrustProfile | null> {
     try {
-      const result = await this.contract.getTrustProfile(address);
-      return {
-        trustScore: Number(result[0]),
-        proofTypes: result[1],
-        endorsementCount: Number(result[2]),
-        lastActivityTimestamp: Number(result[3]),
-      };
-    } catch (error: any) {
-      // If profile not found (contract reverts), return null instead of throwing
-      if (
-        error?.code === "CALL_EXCEPTION" ||
-        error?.message?.includes("Profile not found") ||
-        error?.message?.includes("execution reverted")
-      ) {
+      const result = await this.contract.profiles(address);
+
+      const proofCount = Number(result[0]);
+
+      // If no proofs registered, return null
+      if (proofCount === 0) {
         console.log("No on-chain trust profile found for address:", address);
         return null;
       }
+
+      // Get proof types by checking getUserProofIds and getProof
+      const proofIds = await this.contract.getUserProofIds(address);
+      const proofTypes: string[] = [];
+
+      for (const proofId of proofIds) {
+        try {
+          const proof = await this.contract.getProof(address, proofId);
+          const credentialType = proof[0];
+          const isActive = proof[4];
+
+          if (isActive && !proofTypes.includes(credentialType)) {
+            proofTypes.push(credentialType);
+          }
+        } catch (err) {
+          console.warn(`Failed to get proof ${proofId}:`, err);
+        }
+      }
+
+      return {
+        proofCount,
+        trustScore: Number(result[5]),
+        proofTypes,
+        endorsementCount: 0, // Contract doesn't have endorsements yet
+        lastActivityTimestamp: Number(result[6]),
+        hasKYC: result[2],
+        workHistoryCount: Number(result[3]),
+        hasFanBadge: result[4],
+      };
+    } catch (error: any) {
       console.error("Failed to get trust profile:", error);
-      throw error;
+      return null;
     }
   }
 
   /**
-   * Check if address has specific proof type
+   * Check if address has specific credential type
    */
-  async hasProof(address: string, proofType: string): Promise<boolean> {
+  async hasProof(address: string, credentialType: string): Promise<boolean> {
     try {
-      return await this.contract.hasProof(address, proofType);
+      return await this.contract.hasCredentialType(address, credentialType);
     } catch (error) {
       console.error("Failed to check proof:", error);
       return false;
@@ -96,79 +105,43 @@ class TrustService {
   }
 
   /**
-   * Get details of a specific proof
+   * Get all proof IDs for an address
    */
-  async getProofDetails(
-    address: string,
-    proofType: string
-  ): Promise<ProofDetails | null> {
+  async getUserProofIds(address: string): Promise<number[]> {
     try {
-      const result = await this.contract.getProofDetails(address, proofType);
-      if (!result.credentialId) return null;
+      const ids = await this.contract.getUserProofIds(address);
+      return ids.map((id: bigint) => Number(id));
+    } catch (error) {
+      console.error("Failed to get user proof IDs:", error);
+      return [];
+    }
+  }
 
+  /**
+   * Get specific proof details
+   */
+  async getProof(
+    address: string,
+    proofId: number
+  ): Promise<{
+    credentialType: string;
+    credentialId: string;
+    metadata: string;
+    timestamp: number;
+    isActive: boolean;
+  } | null> {
+    try {
+      const result = await this.contract.getProof(address, proofId);
       return {
-        credentialId: result.credentialId,
-        issuer: result.issuer,
-        timestamp: Number(result.timestamp),
+        credentialType: result[0],
+        credentialId: result[1],
+        metadata: result[2],
+        timestamp: Number(result[3]),
+        isActive: result[4],
       };
     } catch (error) {
-      console.error("Failed to get proof details:", error);
+      console.error("Failed to get proof:", error);
       return null;
-    }
-  }
-
-  /**
-   * Get weight of a proof type
-   */
-  async getProofTypeWeight(proofType: string): Promise<number> {
-    try {
-      const weight = await this.contract.getProofTypeWeight(proofType);
-      return Number(weight);
-    } catch (error) {
-      console.error("Failed to get proof type weight:", error);
-      return 0;
-    }
-  }
-
-  /**
-   * Register a proof on-chain (requires signer)
-   */
-  async registerProof(
-    signer: ethers.Signer,
-    userAddress: string,
-    proofType: string,
-    credentialId: string,
-    issuer: string
-  ): Promise<ethers.TransactionReceipt | null> {
-    try {
-      const contractWithSigner = this.contract.connect(signer) as any;
-      const tx = await contractWithSigner.registerProof(
-        userAddress,
-        proofType,
-        credentialId,
-        issuer
-      );
-      return await tx.wait();
-    } catch (error) {
-      console.error("Failed to register proof:", error);
-      throw error;
-    }
-  }
-
-  /**
-   * Endorse a profile (requires signer)
-   */
-  async endorseProfile(
-    signer: ethers.Signer,
-    profileOwner: string
-  ): Promise<ethers.TransactionReceipt | null> {
-    try {
-      const contractWithSigner = this.contract.connect(signer) as any;
-      const tx = await contractWithSigner.endorseProfile(profileOwner);
-      return await tx.wait();
-    } catch (error) {
-      console.error("Failed to endorse profile:", error);
-      throw error;
     }
   }
 
@@ -177,36 +150,36 @@ class TrustService {
    */
   onProofRegistered(
     callback: (
-      userAddress: string,
-      proofType: string,
+      user: string,
+      proofId: number,
+      credentialType: string,
       credentialId: string,
       timestamp: number
     ) => void
   ) {
     this.contract.on(
       "ProofRegistered",
-      (userAddress, proofType, credentialId, timestamp) => {
-        callback(userAddress, proofType, credentialId, Number(timestamp));
+      (user, proofId, credentialType, credentialId, timestamp) => {
+        callback(
+          user,
+          Number(proofId),
+          credentialType,
+          credentialId,
+          Number(timestamp)
+        );
       }
     );
   }
 
   /**
-   * Listen for ProfileEndorsed events
+   * Listen for TrustScoreUpdated events
    */
-  onProfileEndorsed(
-    callback: (
-      profileOwner: string,
-      endorser: string,
-      newEndorsementCount: number
-    ) => void
+  onTrustScoreUpdated(
+    callback: (user: string, newScore: number, timestamp: number) => void
   ) {
-    this.contract.on(
-      "ProfileEndorsed",
-      (profileOwner, endorser, newEndorsementCount) => {
-        callback(profileOwner, endorser, Number(newEndorsementCount));
-      }
-    );
+    this.contract.on("TrustScoreUpdated", (user, newScore, timestamp) => {
+      callback(user, Number(newScore), Number(timestamp));
+    });
   }
 
   /**
