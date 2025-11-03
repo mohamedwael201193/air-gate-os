@@ -1,3 +1,4 @@
+import { airVerify } from "@/air/airkit";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useAirKit } from "@/store/useAirKit";
@@ -15,7 +16,7 @@ import { toast } from "sonner";
 
 export default function VerifyCredential() {
   const navigate = useNavigate();
-  const { user, getService } = useAirKit();
+  const { user } = useAirKit();
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationResult, setVerificationResult] = useState<{
     success: boolean;
@@ -66,11 +67,6 @@ export default function VerifyCredential() {
     try {
       console.log("🔍 Verifying credential:", requiredCredential);
 
-      const service = await getService();
-      if (!service) {
-        throw new Error("AIR service not available");
-      }
-
       // Get the verifier program ID for this credential type
       const verifierProgramIds = JSON.parse(
         import.meta.env.VITE_VERIFIER_PROGRAM_IDS || "{}"
@@ -91,31 +87,28 @@ export default function VerifyCredential() {
 
       console.log("🔍 Using verifier program:", verifierProgramId);
 
-      // Request verification from AIR
+      // Request verification from AIR - this opens AIR wallet to verify credential
       // This VERIFIES existing credential, not issues a new one
-      const verifyRequest = await service.requestVerifiableCredential(
-        verifierProgramId
+      const verifyResult = await airVerify(
+        verifierProgramId,
+        `${window.location.origin}/verify-credential`
       );
 
-      console.log("📥 Verification request result:", verifyRequest);
+      console.log("📥 Verification result:", verifyResult);
 
-      // Check if user has the required credential
-      if (verifyRequest && verifyRequest.credential) {
+      // AIR Kit returns the verified credential if it exists
+      if (verifyResult) {
         // Credential exists and is valid!
         setVerificationResult({
           success: true,
           credentialType: requiredCredential,
           message: `Access granted! Your ${requiredCredential} credential is verified.`,
-          details: {
-            credentialId: verifyRequest.credential.id,
-            issuedAt: verifyRequest.credential.issuanceDate,
-            issuer: verifyRequest.credential.issuer,
-          },
+          details: verifyResult,
         });
 
         toast.success("Verification successful!");
       } else {
-        // Credential not found
+        // Credential not found or verification failed
         setVerificationResult({
           success: false,
           credentialType: requiredCredential,
